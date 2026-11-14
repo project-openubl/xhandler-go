@@ -83,6 +83,7 @@ locally. Nothing is pushed.
   - The **XML → model JAXB mappers are removed** (Rust has no equivalent).
   - Guía REST error details move from `metadata.notes` into `metadata.description`.
   - The signed XML is UTF-8.
+  - `XSender` → `FileSender`, `KeyPair` → `SigningKey`, URL-based consult methods.
 
 ## Decisions taken on my own (worth a look)
 
@@ -100,19 +101,26 @@ locally. Nothing is pushed.
   Java leave unset fields to Rust.
 - **The name `xhandler` is free on PyPI** (checked).
 
+## Resolved after review (2026-11-13)
+
+- `Envio.fecha_traslado` is optional. Enriching a guía without it fails validation
+  (`envio.fecha_traslado is required`) instead of rendering 1970-01-01.
+- Faults carry both codes: `http_status` (e.g. 422) and SUNAT's code (`code` /
+  `sunat_code`, e.g. 1033). For REST answers, SUNAT's code is taken from a `cod` or
+  `codigo` header if present, else from `errors[0].cod`, else from `cod`. SUNAT documents
+  no such header, so the header names are a guess. The hosts now pass the response
+  headers to the core. In Java this is `Metadata.responseCode` + `Metadata.httpStatus`
+  and `ConsultResponse.httpStatus`.
+- The same names in every binding (a hard break in Java):
+  - `FileSender` with `sendFile`, `sendPack`, `verifyTicket(target, ticket)` and
+    `verifyFileTicket(xml, ticket)`.
+  - `SunatClient` with `getStatus`, `getStatusCdr`, `validateCdp` and `validateFile`,
+    taking the service URL.
+  - `SigningKey` instead of `KeyPair`.
+
 ## Open questions
 
-- `Envio.fecha_traslado` (Rust) is a non-optional date that defaults to 1970-01-01 when
-  missing. Should it become optional and be validated?
-- REST faults: SUNAT's detailed code (`errors[].cod`, e.g. 1033) is folded into the
-  message, and the HTTP code (422) becomes the fault code. Should the detailed code be
-  used instead?
-- Java `XSender`/`SunatResponse` kept their API, while Go and Python use `FileSender`
-  (Rust's name). Should the names be unified? Java's `verifyTicket(xml, ticket)` is
-  Go's `VerifyFileTicket`, not its `VerifyTicket(target, ticket)`.
-- Java `io.github.project.openubl.xbuilder.signature.KeyPair` clashes by name with
-  `java.security.KeyPair`. Should it be renamed (e.g. `SigningKey`)?
 - Java's live beta suite uses `-Dxsender.sunat-beta=true`, while every e2e test uses
   `XHANDLER_E2E=true`. Should they be unified?
-- Each milestone was reviewed by a subagent. The findings above are the ones left
-  open; all the others were applied.
+- Java keeps `CompanyURLs`/`CompanyCredentials` and `XSenderException` (Go/Python:
+  `URLs`/`Credentials` and the core error). Should these be renamed as well?
