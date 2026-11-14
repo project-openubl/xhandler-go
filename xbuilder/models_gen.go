@@ -324,10 +324,11 @@ type Firmante struct {
 	RazonSocial string `json:"razon_social"`
 }
 
-// Forma de pago
+// Forma de pago. A missing `tipo` is filled in by the enricher, and
+// payment in full ("contado") has no `cuotas`.
 type FormaPago struct {
 	Tipo   *TipoFormaPago `json:"tipo,omitempty"`
-	Cuotas []CuotaPago    `json:"cuotas"`
+	Cuotas []CuotaPago    `json:"cuotas,omitempty"`
 	Total  *Decimal       `json:"total,omitempty"`
 }
 
