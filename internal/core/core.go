@@ -18,8 +18,6 @@ import (
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
-
-	"github.com/project-openubl/xhandler-go"
 )
 
 //go:embed xhandler.wasm
@@ -32,7 +30,7 @@ var version string
 var Version = strings.TrimSpace(version)
 
 // Invoke runs op with input (marshaled to JSON) and unmarshals the result
-// into output. Errors of the operation are returned as *xhandler.Error.
+// into output. Errors of the operation are returned as *Error.
 func Invoke(ctx context.Context, op string, input, output any) error {
 	request, err := json.Marshal(struct {
 		Op    string `json:"op"`
@@ -49,7 +47,7 @@ func Invoke(ctx context.Context, op string, input, output any) error {
 
 	var response struct {
 		Ok    json.RawMessage `json:"ok"`
-		Error *xhandler.Error `json:"error"`
+		Error *Error          `json:"error"`
 	}
 	if err := json.Unmarshal(raw, &response); err != nil {
 		return fmt.Errorf("xhandler %s: invalid response: %w", op, err)
@@ -131,7 +129,9 @@ func (p *pool) instantiate(ctx context.Context) (*module, error) {
 	config := wazero.NewModuleConfig().
 		WithName(""). // anonymous: several instances can coexist
 		WithStartFunctions("_initialize").
-		WithRandSource(rand.Reader)
+		WithRandSource(rand.Reader).
+		WithSysWalltime(). // the core uses today's date by default
+		WithSysNanotime()
 	instance, err := p.runtime.InstantiateModule(ctx, p.compiled, config)
 	if err != nil {
 		return nil, fmt.Errorf("xhandler core: instantiate: %w", err)
@@ -149,6 +149,8 @@ type module struct {
 	alloc, free, call api.Function
 }
 
+// invoke runs one request. After an error (a trap) the instance must be
+// discarded, so nothing is freed then.
 func (m *module) invoke(ctx context.Context, request []byte) ([]byte, error) {
 	size := uint64(len(request))
 	result, err := m.alloc.Call(ctx, size)
@@ -156,8 +158,6 @@ func (m *module) invoke(ctx context.Context, request []byte) ([]byte, error) {
 		return nil, err
 	}
 	ptr := result[0]
-	defer m.free.Call(ctx, ptr, size) //nolint:errcheck // nothing to do if freeing fails
-
 	if !m.Memory().Write(uint32(ptr), request) {
 		return nil, fmt.Errorf("request out of memory bounds")
 	}
@@ -166,12 +166,17 @@ func (m *module) invoke(ctx context.Context, request []byte) ([]byte, error) {
 		return nil, err
 	}
 	responsePtr, responseSize := uint32(result[0]>>32), uint32(result[0])
-	defer m.free.Call(ctx, uint64(responsePtr), uint64(responseSize)) //nolint:errcheck // as above
-
-	response, ok := m.Memory().Read(responsePtr, responseSize)
+	view, ok := m.Memory().Read(responsePtr, responseSize)
 	if !ok {
 		return nil, fmt.Errorf("response out of memory bounds")
 	}
-	// Read returns a view of the module memory: copy it before freeing.
-	return append([]byte(nil), response...), nil
+	// The view is the module memory: copy it before freeing.
+	response := append([]byte(nil), view...)
+	if _, err := m.free.Call(ctx, ptr, size); err != nil {
+		return nil, err
+	}
+	if _, err := m.free.Call(ctx, uint64(responsePtr), uint64(responseSize)); err != nil {
+		return nil, err
+	}
+	return response, nil
 }

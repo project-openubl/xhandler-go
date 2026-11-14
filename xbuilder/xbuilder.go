@@ -10,6 +10,7 @@ package xbuilder
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -24,32 +25,28 @@ type Document interface {
 	Kind() string
 }
 
-// TodayDefaults returns the Defaults for documents issued today, with the
-// current SUNAT tax rates.
-func TodayDefaults() Defaults {
-	return Defaults{FechaEmision: Today()}
-}
-
-type taggedDocument struct {
-	Kind string          `json:"kind"`
-	Spec json.RawMessage `json:"spec"`
-}
-
 type input struct {
-	Document taggedDocument `json:"document"`
-	Defaults Defaults       `json:"defaults"`
+	Document struct {
+		Kind string   `json:"kind"`
+		Spec Document `json:"spec"`
+	} `json:"document"`
+	Defaults Defaults `json:"defaults"`
 }
 
 func newInput(document Document, defaults Defaults) (input, error) {
-	spec, err := json.Marshal(document)
-	if err != nil {
-		return input{}, fmt.Errorf("xbuilder: %w", err)
+	if document == nil || reflect.ValueOf(document).Kind() == reflect.Pointer && reflect.ValueOf(document).IsNil() {
+		return input{}, errors.New("xbuilder: nil document")
 	}
-	return input{taggedDocument{document.Kind(), spec}, defaults}, nil
+	var in input
+	in.Document.Kind = document.Kind()
+	in.Document.Spec = document
+	in.Defaults = defaults
+	return in, nil
 }
 
-// Build enriches the document and renders its XML. The document itself is
-// not modified; use Enrich to get the computed values.
+// Build enriches the document and renders its XML. The zero Defaults use
+// today's date in Peru and the current SUNAT tax rates. The document itself
+// is not modified; use Enrich to get the computed values.
 func Build(ctx context.Context, document Document, defaults Defaults) (string, error) {
 	in, err := newInput(document, defaults)
 	if err != nil {
@@ -69,13 +66,13 @@ func Enrich[T Document](ctx context.Context, document T, defaults Defaults) (T, 
 	if err != nil {
 		return zero, err
 	}
-	var out taggedDocument
-	if err := core.Invoke(ctx, "enrich", in, &out); err != nil {
+	var spec json.RawMessage
+	if err := core.Invoke(ctx, "enrich", in, &spec); err != nil {
 		return zero, err
 	}
 	// The dynamic type, so that T can also be the Document interface.
 	enriched := reflect.New(reflect.TypeOf(document))
-	if err := json.Unmarshal(out.Spec, enriched.Interface()); err != nil {
+	if err := json.Unmarshal(spec, enriched.Interface()); err != nil {
 		return zero, fmt.Errorf("xbuilder: %w", err)
 	}
 	return enriched.Elem().Interface().(T), nil

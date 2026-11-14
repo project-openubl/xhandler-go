@@ -5,11 +5,11 @@ package xbuilder
 // Anticipo asociado a un documento
 type Anticipo struct {
 	// Catalog53. Valores válidos: "04", "05", "06"
-	Tipo string `json:"tipo,omitempty"`
+	Tipo *string `json:"tipo,omitempty"`
 	// Serie y número de comprobante del detalle, por ejemplo "F123-4"
 	ComprobanteSerieNumero string `json:"comprobante_serie_numero"`
 	// Catalog12.
-	ComprobanteTipo string  `json:"comprobante_tipo,omitempty"`
+	ComprobanteTipo *string `json:"comprobante_tipo,omitempty"`
 	Monto           Decimal `json:"monto"`
 }
 
@@ -17,7 +17,7 @@ type Anticipo struct {
 type Atributo struct {
 	Nombre      string  `json:"nombre,omitempty"`
 	Codigo      string  `json:"codigo,omitempty"`
-	Valor       string  `json:"valor,omitempty"`
+	Valor       *string `json:"valor,omitempty"`
 	FechaInicio *Date   `json:"fecha_inicio,omitempty"`
 	FechaFin    *Date   `json:"fecha_fin,omitempty"`
 	Duracion    *uint32 `json:"duracion,omitempty"`
@@ -36,13 +36,13 @@ type Cargo struct {
 // Conductor del vehiculo
 type Chofer struct {
 	// Free text rendered as JobTitle, e.g. "CONDUCTOR_PRINCIPAL", "COPILOTO"
-	Tipo string `json:"tipo,omitempty"`
+	Tipo *string `json:"tipo,omitempty"`
 	// Catalog6
-	TipoDocumentoIdentidad   string `json:"tipo_documento_identidad,omitempty"`
-	NumeroDocumentoIdentidad string `json:"numero_documento_identidad,omitempty"`
-	Nombres                  string `json:"nombres,omitempty"`
-	Apellidos                string `json:"apellidos,omitempty"`
-	Licencia                 string `json:"licencia,omitempty"`
+	TipoDocumentoIdentidad   string  `json:"tipo_documento_identidad,omitempty"`
+	NumeroDocumentoIdentidad string  `json:"numero_documento_identidad,omitempty"`
+	Nombres                  *string `json:"nombres,omitempty"`
+	Apellidos                *string `json:"apellidos,omitempty"`
+	Licencia                 *string `json:"licencia,omitempty"`
 }
 
 // Quien es el cliente de la transaccion
@@ -65,15 +65,15 @@ type CodigoGs1 struct {
 
 // Contacto
 type Contacto struct {
-	Telefono string `json:"telefono,omitempty"`
-	Email    string `json:"email,omitempty"`
+	Telefono *string `json:"telefono,omitempty"`
+	Email    *string `json:"email,omitempty"`
 }
 
 // Nota de credito
 type CreditNote struct {
 	Leyendas     map[string]string `json:"leyendas,omitempty"`
 	SerieNumero  string            `json:"serie_numero,omitempty"`
-	Moneda       string            `json:"moneda,omitempty"`
+	Moneda       *string           `json:"moneda,omitempty"`
 	FechaEmision *Date             `json:"fecha_emision,omitempty"`
 	HoraEmision  *Time             `json:"hora_emision,omitempty"`
 	Proveedor    Proveedor         `json:"proveedor"`
@@ -83,17 +83,17 @@ type CreditNote struct {
 	IgvTasa      *Decimal          `json:"igv_tasa,omitempty"`
 	IvapTasa     *Decimal          `json:"ivap_tasa,omitempty"`
 	// Catalog9
-	TipoNota                       string `json:"tipo_nota,omitempty"`
-	ComprobanteAfectadoSerieNumero string `json:"comprobante_afectado_serie_numero,omitempty"`
+	TipoNota                       *string `json:"tipo_nota,omitempty"`
+	ComprobanteAfectadoSerieNumero string  `json:"comprobante_afectado_serie_numero,omitempty"`
 	// Catalog1
-	ComprobanteAfectadoTipo string                 `json:"comprobante_afectado_tipo,omitempty"`
+	ComprobanteAfectadoTipo *string                `json:"comprobante_afectado_tipo,omitempty"`
 	DescripcionSustento     string                 `json:"descripcion_sustento,omitempty"`
 	Detalles                []Detalle              `json:"detalles,omitempty"`
 	TotalImporte            *TotalImporteNote      `json:"total_importe,omitempty"`
 	TotalImpuestos          *TotalImpuestos        `json:"total_impuestos,omitempty"`
 	Guias                   []Guia                 `json:"guias,omitempty"`
 	DocumentosRelacionados  []DocumentoRelacionado `json:"documentos_relacionados,omitempty"`
-	OrdenCompra             string                 `json:"orden_compra,omitempty"`
+	OrdenCompra             *string                `json:"orden_compra,omitempty"`
 }
 
 // Cuota de pago
@@ -106,7 +106,7 @@ type CuotaPago struct {
 type DebitNote struct {
 	Leyendas     map[string]string `json:"leyendas,omitempty"`
 	SerieNumero  string            `json:"serie_numero,omitempty"`
-	Moneda       string            `json:"moneda,omitempty"`
+	Moneda       *string           `json:"moneda,omitempty"`
 	FechaEmision *Date             `json:"fecha_emision,omitempty"`
 	HoraEmision  *Time             `json:"hora_emision,omitempty"`
 	Proveedor    Proveedor         `json:"proveedor"`
@@ -116,32 +116,35 @@ type DebitNote struct {
 	IgvTasa      *Decimal          `json:"igv_tasa,omitempty"`
 	IvapTasa     *Decimal          `json:"ivap_tasa,omitempty"`
 	// Catalog10
-	TipoNota                       string `json:"tipo_nota,omitempty"`
-	ComprobanteAfectadoSerieNumero string `json:"comprobante_afectado_serie_numero,omitempty"`
+	TipoNota                       *string `json:"tipo_nota,omitempty"`
+	ComprobanteAfectadoSerieNumero string  `json:"comprobante_afectado_serie_numero,omitempty"`
 	// Catalog1
-	ComprobanteAfectadoTipo string                 `json:"comprobante_afectado_tipo,omitempty"`
+	ComprobanteAfectadoTipo *string                `json:"comprobante_afectado_tipo,omitempty"`
 	DescripcionSustento     string                 `json:"descripcion_sustento,omitempty"`
 	Detalles                []Detalle              `json:"detalles,omitempty"`
 	TotalImporte            *TotalImporteNote      `json:"total_importe,omitempty"`
 	TotalImpuestos          *TotalImpuestos        `json:"total_impuestos,omitempty"`
 	Guias                   []Guia                 `json:"guias,omitempty"`
 	DocumentosRelacionados  []DocumentoRelacionado `json:"documentos_relacionados,omitempty"`
-	OrdenCompra             string                 `json:"orden_compra,omitempty"`
+	OrdenCompra             *string                `json:"orden_compra,omitempty"`
 }
 
-// Values used when the document does not set them. The tax rates default to
-// the current SUNAT rates; `fecha_emision` is required (usually today).
+// Values used when the document does not set them; every field is optional.
 type Defaults struct {
-	IcbTasa      *Decimal `json:"icb_tasa,omitempty"`
-	IgvTasa      *Decimal `json:"igv_tasa,omitempty"`
-	IvapTasa     *Decimal `json:"ivap_tasa,omitempty"`
-	FechaEmision Date     `json:"fecha_emision"`
+	// Today in Peru by default
+	FechaEmision *Date `json:"fecha_emision,omitempty"`
+	// The current SUNAT rate by default
+	IcbTasa *Decimal `json:"icb_tasa,omitempty"`
+	// The current SUNAT rate by default
+	IgvTasa *Decimal `json:"igv_tasa,omitempty"`
+	// The current SUNAT rate by default
+	IvapTasa *Decimal `json:"ivap_tasa,omitempty"`
 }
 
 // Descuento asociado a un documento o item
 type Descuento struct {
 	// Catalog53.
-	Tipo      string   `json:"tipo,omitempty"`
+	Tipo      *string  `json:"tipo,omitempty"`
 	Monto     Decimal  `json:"monto"`
 	MontoBase *Decimal `json:"monto_base,omitempty"`
 	Factor    *Decimal `json:"factor,omitempty"`
@@ -151,12 +154,12 @@ type Descuento struct {
 type DespatchAdvice struct {
 	SerieNumero string `json:"serie_numero,omitempty"`
 	// UBL CustomizationID, "2.0" when missing
-	Version      string `json:"version,omitempty"`
-	FechaEmision *Date  `json:"fecha_emision,omitempty"`
-	HoraEmision  *Time  `json:"hora_emision,omitempty"`
+	Version      *string `json:"version,omitempty"`
+	FechaEmision *Date   `json:"fecha_emision,omitempty"`
+	HoraEmision  *Time   `json:"hora_emision,omitempty"`
 	// Catalog1: auto-filled from serie prefix (T->"09", V->"31")
-	TipoComprobante       string                              `json:"tipo_comprobante,omitempty"`
-	Observaciones         string                              `json:"observaciones,omitempty"`
+	TipoComprobante       *string                             `json:"tipo_comprobante,omitempty"`
+	Observaciones         *string                             `json:"observaciones,omitempty"`
 	DocumentoBaja         *DespatchAdviceDocumentoBaja        `json:"documento_baja,omitempty"`
 	DocumentoRelacionado  *DespatchAdviceDocumentoRelacionado `json:"documento_relacionado,omitempty"`
 	DocumentosAdicionales []DocumentoAdicional                `json:"documentos_adicionales,omitempty"`
@@ -174,9 +177,9 @@ type DespatchAdvice struct {
 
 // Propiedad adicional de un item (AdditionalItemProperty)
 type DespatchAdviceAtributo struct {
-	Codigo string `json:"codigo,omitempty"`
-	Nombre string `json:"nombre,omitempty"`
-	Valor  string `json:"valor,omitempty"`
+	Codigo string  `json:"codigo,omitempty"`
+	Nombre string  `json:"nombre,omitempty"`
+	Valor  *string `json:"valor,omitempty"`
 }
 
 // Documento de baja asociado
@@ -196,9 +199,9 @@ type DespatchAdviceDocumentoRelacionado struct {
 type DespatchAdviceItem struct {
 	UnidadMedida string                   `json:"unidad_medida,omitempty"`
 	Cantidad     Decimal                  `json:"cantidad"`
-	Descripcion  string                   `json:"descripcion,omitempty"`
+	Descripcion  *string                  `json:"descripcion,omitempty"`
 	Codigo       string                   `json:"codigo,omitempty"`
-	CodigoSunat  string                   `json:"codigo_sunat,omitempty"`
+	CodigoSunat  *string                  `json:"codigo_sunat,omitempty"`
 	Atributos    []DespatchAdviceAtributo `json:"atributos,omitempty"`
 }
 
@@ -215,11 +218,11 @@ type Destinatario struct {
 type Detalle struct {
 	Descripcion  string  `json:"descripcion,omitempty"`
 	Cantidad     Decimal `json:"cantidad"`
-	UnidadMedida string  `json:"unidad_medida,omitempty"`
+	UnidadMedida *string `json:"unidad_medida,omitempty"`
 	// Código del producto del vendedor (SellersItemIdentification)
-	Codigo string `json:"codigo,omitempty"`
+	Codigo *string `json:"codigo,omitempty"`
 	// Código de producto SUNAT - Catalog25 (CommodityClassification)
-	CodigoSunat string `json:"codigo_sunat,omitempty"`
+	CodigoSunat *string `json:"codigo_sunat,omitempty"`
 	// Código estándar GS1/GTIN (StandardItemIdentification).
 	// Incluye el código y el tipo de estructura GTIN (e.g. "GTIN-8", "GTIN-13", "GTIN-14").
 	CodigoGs1 *CodigoGs1 `json:"codigo_gs1,omitempty"`
@@ -228,14 +231,14 @@ type Detalle struct {
 	PrecioConImpuestos *Decimal `json:"precio_con_impuestos,omitempty"`
 	PrecioReferencia   *Decimal `json:"precio_referencia,omitempty"`
 	// Catalog16
-	PrecioReferenciaTipo string   `json:"precio_referencia_tipo,omitempty"`
+	PrecioReferenciaTipo *string  `json:"precio_referencia_tipo,omitempty"`
 	IgvTasa              *Decimal `json:"igv_tasa,omitempty"`
 	IcbTasa              *Decimal `json:"icb_tasa,omitempty"`
 	IscTasa              *Decimal `json:"isc_tasa,omitempty"`
 	// Catalog7
-	IgvTipo string `json:"igv_tipo,omitempty"`
+	IgvTipo *string `json:"igv_tipo,omitempty"`
 	// Catalog8
-	IscTipo          string     `json:"isc_tipo,omitempty"`
+	IscTipo          *string    `json:"isc_tipo,omitempty"`
 	IcbAplica        bool       `json:"icb_aplica,omitempty"`
 	Icb              *Decimal   `json:"icb,omitempty"`
 	Igv              *Decimal   `json:"igv,omitempty"`
@@ -259,23 +262,23 @@ type Detraccion struct {
 
 // Direccion
 type Direccion struct {
-	Ubigeo       string `json:"ubigeo,omitempty"`
-	CodigoLocal  string `json:"codigo_local,omitempty"`
-	Urbanizacion string `json:"urbanizacion,omitempty"`
-	Departamento string `json:"departamento,omitempty"`
-	Provincia    string `json:"provincia,omitempty"`
-	Distrito     string `json:"distrito,omitempty"`
-	Direccion    string `json:"direccion,omitempty"`
-	CodigoPais   string `json:"codigo_pais,omitempty"`
+	Ubigeo       *string `json:"ubigeo,omitempty"`
+	CodigoLocal  *string `json:"codigo_local,omitempty"`
+	Urbanizacion *string `json:"urbanizacion,omitempty"`
+	Departamento *string `json:"departamento,omitempty"`
+	Provincia    *string `json:"provincia,omitempty"`
+	Distrito     *string `json:"distrito,omitempty"`
+	Direccion    *string `json:"direccion,omitempty"`
+	CodigoPais   *string `json:"codigo_pais,omitempty"`
 }
 
 // Documento adicional relacionado al transporte
 type DocumentoAdicional struct {
 	// Catalog61
-	TipoDocumento            string `json:"tipo_documento,omitempty"`
-	TipoDocumentoDescripcion string `json:"tipo_documento_descripcion,omitempty"`
-	Numero                   string `json:"numero,omitempty"`
-	RucEmisor                string `json:"ruc_emisor,omitempty"`
+	TipoDocumento            string  `json:"tipo_documento,omitempty"`
+	TipoDocumentoDescripcion *string `json:"tipo_documento_descripcion,omitempty"`
+	Numero                   string  `json:"numero,omitempty"`
+	RucEmisor                *string `json:"ruc_emisor,omitempty"`
 }
 
 // Documento relacionado
@@ -289,8 +292,8 @@ type DocumentoRelacionado struct {
 type Envio struct {
 	// Catalog20: motivo de traslado
 	TipoTraslado          string  `json:"tipo_traslado,omitempty"`
-	MotivoTraslado        string  `json:"motivo_traslado,omitempty"`
-	SustentoPeso          string  `json:"sustento_peso,omitempty"`
+	MotivoTraslado        *string `json:"motivo_traslado,omitempty"`
+	SustentoPeso          *string `json:"sustento_peso,omitempty"`
 	PesoTotal             Decimal `json:"peso_total"`
 	PesoTotalUnidadMedida string  `json:"peso_total_unidad_medida,omitempty"`
 	// Peso neto de los items, en KGM
@@ -352,7 +355,7 @@ type GuiaEmbebida struct {
 type Invoice struct {
 	Leyendas         map[string]string `json:"leyendas,omitempty"`
 	SerieNumero      string            `json:"serie_numero,omitempty"`
-	Moneda           string            `json:"moneda,omitempty"`
+	Moneda           *string           `json:"moneda,omitempty"`
 	FechaEmision     *Date             `json:"fecha_emision,omitempty"`
 	HoraEmision      *Time             `json:"hora_emision,omitempty"`
 	FechaVencimiento *Date             `json:"fecha_vencimiento,omitempty"`
@@ -363,9 +366,9 @@ type Invoice struct {
 	IgvTasa          *Decimal          `json:"igv_tasa,omitempty"`
 	IvapTasa         *Decimal          `json:"ivap_tasa,omitempty"`
 	// Catalog1
-	TipoComprobante string `json:"tipo_comprobante,omitempty"`
+	TipoComprobante *string `json:"tipo_comprobante,omitempty"`
 	// Catalog51
-	TipoOperacion    string      `json:"tipo_operacion,omitempty"`
+	TipoOperacion    *string     `json:"tipo_operacion,omitempty"`
 	Detraccion       *Detraccion `json:"detraccion,omitempty"`
 	Percepcion       *Percepcion `json:"percepcion,omitempty"`
 	DireccionEntrega *Direccion  `json:"direccion_entrega,omitempty"`
@@ -380,8 +383,8 @@ type Invoice struct {
 	TotalImpuestos         *TotalImpuestos        `json:"total_impuestos,omitempty"`
 	Guias                  []Guia                 `json:"guias,omitempty"`
 	DocumentosRelacionados []DocumentoRelacionado `json:"documentos_relacionados,omitempty"`
-	Observaciones          string                 `json:"observaciones,omitempty"`
-	OrdenCompra            string                 `json:"orden_compra,omitempty"`
+	Observaciones          *string                `json:"observaciones,omitempty"`
+	OrdenCompra            *string                `json:"orden_compra,omitempty"`
 }
 
 // Punto de partida
@@ -389,8 +392,8 @@ type Partida struct {
 	Ubigeo    string `json:"ubigeo,omitempty"`
 	Direccion string `json:"direccion,omitempty"`
 	// Codigo de establecimiento anexo, del `ruc` indicado
-	CodigoLocal string `json:"codigo_local,omitempty"`
-	Ruc         string `json:"ruc,omitempty"`
+	CodigoLocal *string `json:"codigo_local,omitempty"`
+	Ruc         *string `json:"ruc,omitempty"`
 }
 
 // Percepcion asociada a un documento
@@ -409,7 +412,7 @@ type PercepcionRetencionComprobanteAfectado struct {
 	SerieNumero     string  `json:"serie_numero"`
 	FechaEmision    Date    `json:"fecha_emision"`
 	ImporteTotal    Decimal `json:"importe_total"`
-	Moneda          string  `json:"moneda,omitempty"`
+	Moneda          *string `json:"moneda,omitempty"`
 }
 
 // Operacion de percepcion o retencion
@@ -426,7 +429,7 @@ type Perception struct {
 	Serie        string    `json:"serie,omitempty"`
 	Numero       uint32    `json:"numero,omitempty"`
 	FechaEmision *Date     `json:"fecha_emision,omitempty"`
-	Moneda       string    `json:"moneda,omitempty"`
+	Moneda       *string   `json:"moneda,omitempty"`
 	Proveedor    Proveedor `json:"proveedor"`
 	Cliente      Cliente   `json:"cliente"`
 	Firmante     *Firmante `json:"firmante,omitempty"`
@@ -435,17 +438,17 @@ type Perception struct {
 	TipoRegimenPorcentaje Decimal                       `json:"tipo_regimen_porcentaje"`
 	ImporteTotalPercibido Decimal                       `json:"importe_total_percibido"`
 	ImporteTotalCobrado   Decimal                       `json:"importe_total_cobrado"`
-	Observaciones         string                        `json:"observaciones,omitempty"`
+	Observaciones         *string                       `json:"observaciones,omitempty"`
 	Operacion             *PercepcionRetencionOperacion `json:"operacion,omitempty"`
 	// Computed during enrichment: "{serie}-{numero}"
-	DocumentoId string `json:"documento_id,omitempty"`
+	DocumentoId *string `json:"documento_id,omitempty"`
 }
 
 // Quien provee el documento electronico. Quien genera o crea el documento.
 type Proveedor struct {
 	Ruc             string     `json:"ruc,omitempty"`
 	RazonSocial     string     `json:"razon_social,omitempty"`
-	NombreComercial string     `json:"nombre_comercial,omitempty"`
+	NombreComercial *string    `json:"nombre_comercial,omitempty"`
 	Direccion       *Direccion `json:"direccion,omitempty"`
 	Contacto        *Contacto  `json:"contacto,omitempty"`
 }
@@ -458,9 +461,9 @@ type Puerto struct {
 
 // Remitente (emisor de la guia)
 type Remitente struct {
-	Ruc               string `json:"ruc,omitempty"`
-	RazonSocial       string `json:"razon_social,omitempty"`
-	NumeroRegistroMtc string `json:"numero_registro_mtc,omitempty"`
+	Ruc               string  `json:"ruc,omitempty"`
+	RazonSocial       string  `json:"razon_social,omitempty"`
+	NumeroRegistroMtc *string `json:"numero_registro_mtc,omitempty"`
 }
 
 // Comprobante de Retencion
@@ -468,7 +471,7 @@ type Retention struct {
 	Serie        string    `json:"serie,omitempty"`
 	Numero       uint32    `json:"numero,omitempty"`
 	FechaEmision *Date     `json:"fecha_emision,omitempty"`
-	Moneda       string    `json:"moneda,omitempty"`
+	Moneda       *string   `json:"moneda,omitempty"`
 	Proveedor    Proveedor `json:"proveedor"`
 	Cliente      Cliente   `json:"cliente"`
 	Firmante     *Firmante `json:"firmante,omitempty"`
@@ -477,10 +480,10 @@ type Retention struct {
 	TipoRegimenPorcentaje Decimal                       `json:"tipo_regimen_porcentaje"`
 	ImporteTotalRetenido  Decimal                       `json:"importe_total_retenido"`
 	ImporteTotalPagado    Decimal                       `json:"importe_total_pagado"`
-	Observaciones         string                        `json:"observaciones,omitempty"`
+	Observaciones         *string                       `json:"observaciones,omitempty"`
 	Operacion             *PercepcionRetencionOperacion `json:"operacion,omitempty"`
 	// Computed during enrichment: "{serie}-{numero}"
-	DocumentoId string `json:"documento_id,omitempty"`
+	DocumentoId *string `json:"documento_id,omitempty"`
 }
 
 // Comunicacion de reversion: same content as a [`VoidedDocuments`] (and
@@ -494,7 +497,7 @@ type Reversion struct {
 	Firmante                 *Firmante             `json:"firmante,omitempty"`
 	Comprobantes             []VoidedDocumentsItem `json:"comprobantes,omitempty"`
 	// Computed during enrichment: "RA-YYYYMMDD-{numero}"
-	DocumentoId string `json:"documento_id,omitempty"`
+	DocumentoId *string `json:"documento_id,omitempty"`
 }
 
 // Resumen diario de boletas
@@ -502,12 +505,12 @@ type SummaryDocuments struct {
 	Numero                   uint32                 `json:"numero,omitempty"`
 	FechaEmision             *Date                  `json:"fecha_emision,omitempty"`
 	FechaEmisionComprobantes *Date                  `json:"fecha_emision_comprobantes,omitempty"`
-	Moneda                   string                 `json:"moneda,omitempty"`
+	Moneda                   *string                `json:"moneda,omitempty"`
 	Proveedor                Proveedor              `json:"proveedor"`
 	Firmante                 *Firmante              `json:"firmante,omitempty"`
 	Comprobantes             []SummaryDocumentsItem `json:"comprobantes,omitempty"`
 	// Computed during enrichment: "RC-YYYYMMDD-{numero}"
-	DocumentoId string `json:"documento_id,omitempty"`
+	DocumentoId *string `json:"documento_id,omitempty"`
 }
 
 // Cliente simplificado para SummaryDocuments
@@ -546,7 +549,7 @@ type SummaryDocumentsItemComprobante struct {
 	// Catalog1: "03"=Boleta, "07"=NC, "08"=ND
 	TipoComprobante     string                               `json:"tipo_comprobante,omitempty"`
 	SerieNumero         string                               `json:"serie_numero,omitempty"`
-	Moneda              string                               `json:"moneda,omitempty"`
+	Moneda              *string                              `json:"moneda,omitempty"`
 	Cliente             SummaryDocumentsCliente              `json:"cliente"`
 	ComprobanteAfectado *SummaryDocumentsComprobanteAfectado `json:"comprobante_afectado,omitempty"`
 	Percepcion          *SummaryDocumentsPercepcion          `json:"percepcion,omitempty"`
@@ -631,20 +634,20 @@ type TotalImpuestos struct {
 // Transportista (transporte publico)
 type Transportista struct {
 	// Catalog6
-	TipoDocumentoIdentidad   string `json:"tipo_documento_identidad,omitempty"`
-	NumeroDocumentoIdentidad string `json:"numero_documento_identidad,omitempty"`
-	Nombre                   string `json:"nombre,omitempty"`
-	NumeroRegistroMtc        string `json:"numero_registro_mtc,omitempty"`
+	TipoDocumentoIdentidad   string  `json:"tipo_documento_identidad,omitempty"`
+	NumeroDocumentoIdentidad string  `json:"numero_documento_identidad,omitempty"`
+	Nombre                   string  `json:"nombre,omitempty"`
+	NumeroRegistroMtc        *string `json:"numero_registro_mtc,omitempty"`
 }
 
 // Vehiculo principal, o secundario dentro de `secundarios`
 type Vehiculo struct {
 	Placa string `json:"placa,omitempty"`
 	// Tarjeta unica de circulacion (TUC)
-	NumeroCirculacion  string `json:"numero_circulacion,omitempty"`
-	NumeroAutorizacion string `json:"numero_autorizacion,omitempty"`
+	NumeroCirculacion  *string `json:"numero_circulacion,omitempty"`
+	NumeroAutorizacion *string `json:"numero_autorizacion,omitempty"`
 	// Entidad que emite la autorizacion
-	CodigoEmisor string     `json:"codigo_emisor,omitempty"`
+	CodigoEmisor *string    `json:"codigo_emisor,omitempty"`
 	Secundarios  []Vehiculo `json:"secundarios,omitempty"`
 }
 
@@ -657,16 +660,16 @@ type VoidedDocuments struct {
 	Firmante                 *Firmante             `json:"firmante,omitempty"`
 	Comprobantes             []VoidedDocumentsItem `json:"comprobantes,omitempty"`
 	// Computed during enrichment: "RA-YYYYMMDD-{numero}"
-	DocumentoId string `json:"documento_id,omitempty"`
+	DocumentoId *string `json:"documento_id,omitempty"`
 }
 
 // Detalle de un comprobante dado de baja
 type VoidedDocumentsItem struct {
 	// Catalog1: auto-filled from serie prefix (F->"01", B->"03", T->"09", V->"31", P->"40", R->"20")
-	TipoComprobante     string `json:"tipo_comprobante,omitempty"`
-	Serie               string `json:"serie,omitempty"`
-	Numero              uint32 `json:"numero,omitempty"`
-	DescripcionSustento string `json:"descripcion_sustento,omitempty"`
+	TipoComprobante     *string `json:"tipo_comprobante,omitempty"`
+	Serie               string  `json:"serie,omitempty"`
+	Numero              uint32  `json:"numero,omitempty"`
+	DescripcionSustento string  `json:"descripcion_sustento,omitempty"`
 }
 
 func (Invoice) Kind() string { return "Invoice" }
@@ -686,3 +689,29 @@ func (SummaryDocuments) Kind() string { return "SummaryDocuments" }
 func (VoidedDocuments) Kind() string { return "VoidedDocuments" }
 
 func (Reversion) Kind() string { return "Reversion" }
+
+// NewDocument returns an empty document of the given kind, e.g. "Invoice",
+// or false when the kind is unknown.
+func NewDocument(kind string) (Document, bool) {
+	switch kind {
+	case "Invoice":
+		return &Invoice{}, true
+	case "CreditNote":
+		return &CreditNote{}, true
+	case "DebitNote":
+		return &DebitNote{}, true
+	case "DespatchAdvice":
+		return &DespatchAdvice{}, true
+	case "Perception":
+		return &Perception{}, true
+	case "Retention":
+		return &Retention{}, true
+	case "SummaryDocuments":
+		return &SummaryDocuments{}, true
+	case "VoidedDocuments":
+		return &VoidedDocuments{}, true
+	case "Reversion":
+		return &Reversion{}, true
+	}
+	return nil, false
+}

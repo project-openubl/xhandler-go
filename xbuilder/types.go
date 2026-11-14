@@ -25,13 +25,6 @@ func DateOf(t time.Time) Date {
 	return NewDate(t.Date())
 }
 
-// Today returns the current date in Peru (UTC-5), the date SUNAT uses.
-func Today() Date {
-	return DateOf(time.Now().In(peru))
-}
-
-var peru = time.FixedZone("PET", -5*60*60)
-
 func (d Date) String() string {
 	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
 }
@@ -80,12 +73,9 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	parsed, err := time.Parse(time.TimeOnly, s)
+	parsed, err := time.Parse(time.TimeOnly, s) // also accepts "10:30:00.5"
 	if err != nil {
-		// e.g. "10:30:00.5"
-		if parsed, err = time.Parse("15:04:05.999999999", s); err != nil {
-			return fmt.Errorf("invalid time %q: %w", s, err)
-		}
+		return fmt.Errorf("invalid time %q: %w", s, err)
 	}
 	*t = NewTime(parsed.Clock())
 	return nil
@@ -130,4 +120,15 @@ func (d Decimal) String() string {
 // MarshalJSON implements json.Marshaler, sending the number as a string.
 func (d Decimal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.String())
+}
+
+// MarshalText implements encoding.TextMarshaler, keeping the scale too.
+func (d Decimal) MarshalText() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+// Ptr returns a pointer to v, for the optional fields of the models:
+// Moneda: xbuilder.Ptr("USD").
+func Ptr[T any](v T) *T {
+	return &v
 }

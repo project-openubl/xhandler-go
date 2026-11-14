@@ -3,29 +3,26 @@
 // WebAssembly module: see the xbuilder, xsigner and xsender packages.
 package xhandler
 
-import "fmt"
+import "github.com/project-openubl/xhandler-go/internal/core"
 
-// ErrorKind classifies the errors returned by the xhandler core.
-type ErrorKind string
+// Error is an error reported by the xhandler core; check its Kind with
+// errors.As.
+type Error = core.Error
+
+// ErrorKind classifies the errors reported by the xhandler core.
+type ErrorKind = core.ErrorKind
 
 const (
-	// ErrInvalidRequest means the request did not reach an operation.
-	ErrInvalidRequest ErrorKind = "invalid_request"
-	// ErrInvalidInput means the input has missing fields or wrong types.
-	ErrInvalidInput ErrorKind = "invalid_input"
-	// ErrValidation means the document has invalid values, e.g. an unknown
+	// KindInvalidRequest means the request did not reach an operation.
+	KindInvalidRequest ErrorKind = "invalid_request"
+	// KindInvalidInput means the input has missing fields or wrong types.
+	KindInvalidInput ErrorKind = "invalid_input"
+	// KindValidation means the document has invalid values, e.g. an unknown
 	// catalog code.
-	ErrValidation ErrorKind = "validation"
-	// ErrRender means the XML could not be rendered.
-	ErrRender ErrorKind = "render"
+	KindValidation ErrorKind = "validation"
+	// KindRender means the XML could not be rendered.
+	KindRender ErrorKind = "render"
 )
 
-// Error is an error reported by the xhandler core.
-type Error struct {
-	Kind    ErrorKind `json:"kind"`
-	Message string    `json:"message"`
-}
-
-func (e *Error) Error() string {
-	return fmt.Sprintf("xhandler %s: %s", e.Kind, e.Message)
-}
+// CoreVersion is the version of the embedded xhandler core.
+var CoreVersion = core.Version

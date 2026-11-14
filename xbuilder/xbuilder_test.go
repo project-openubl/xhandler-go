@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/project-openubl/xhandler-go"
 	"github.com/project-openubl/xhandler-go/internal/conformance"
@@ -13,18 +14,6 @@ import (
 )
 
 const corpus = "../testdata/conformance"
-
-var kinds = map[string]func() xbuilder.Document{
-	"Invoice":          func() xbuilder.Document { return &xbuilder.Invoice{} },
-	"CreditNote":       func() xbuilder.Document { return &xbuilder.CreditNote{} },
-	"DebitNote":        func() xbuilder.Document { return &xbuilder.DebitNote{} },
-	"DespatchAdvice":   func() xbuilder.Document { return &xbuilder.DespatchAdvice{} },
-	"Perception":       func() xbuilder.Document { return &xbuilder.Perception{} },
-	"Retention":        func() xbuilder.Document { return &xbuilder.Retention{} },
-	"SummaryDocuments": func() xbuilder.Document { return &xbuilder.SummaryDocuments{} },
-	"VoidedDocuments":  func() xbuilder.Document { return &xbuilder.VoidedDocuments{} },
-	"Reversion":        func() xbuilder.Document { return &xbuilder.Reversion{} },
-}
 
 type caseInput struct {
 	Document struct {
@@ -47,11 +36,10 @@ func decodeStrict(t *testing.T, data []byte, v any) {
 
 func documentOf(t *testing.T, kind string, spec []byte) xbuilder.Document {
 	t.Helper()
-	newDocument, ok := kinds[kind]
+	document, ok := xbuilder.NewDocument(kind)
 	if !ok {
 		t.Fatalf("unknown kind %q", kind)
 	}
-	document := newDocument()
 	decodeStrict(t, spec, document)
 	if document.Kind() != kind {
 		t.Fatalf("%T reports kind %q", document, document.Kind())
@@ -95,12 +83,7 @@ func TestEnrichCorpusThroughGoTypes(t *testing.T) {
 			decodeStrict(t, c.Input, &in)
 			document := documentOf(t, in.Document.Kind, in.Document.Spec)
 
-			var out struct {
-				Kind string          `json:"kind"`
-				Spec json.RawMessage `json:"spec"`
-			}
-			decodeStrict(t, c.Expected.Ok, &out)
-			expected := documentOf(t, out.Kind, out.Spec)
+			expected := documentOf(t, in.Document.Kind, c.Expected.Ok)
 
 			enriched, err := xbuilder.Enrich(context.Background(), document, in.Defaults)
 			if err != nil {
@@ -125,15 +108,13 @@ func invoice() *xbuilder.Invoice {
 			Nombre:                   "Carlos Feria",
 		},
 		Detalles: []xbuilder.Detalle{
-			{Descripcion: "Item", Cantidad: xbuilder.DecimalFromInt(2), Precio: ptr(xbuilder.DecimalFromInt(100))},
+			{Descripcion: "Item", Cantidad: xbuilder.DecimalFromInt(2), Precio: xbuilder.Ptr(xbuilder.DecimalFromInt(100))},
 		},
 	}
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func TestEnrichComputesTotals(t *testing.T) {
-	defaults := xbuilder.Defaults{FechaEmision: xbuilder.NewDate(2019, 12, 24)}
+	defaults := xbuilder.Defaults{FechaEmision: xbuilder.Ptr(xbuilder.NewDate(2019, 12, 24))}
 	enriched, err := xbuilder.Enrich(context.Background(), invoice(), defaults)
 	if err != nil {
 		t.Fatal(err)
@@ -141,20 +122,39 @@ func TestEnrichComputesTotals(t *testing.T) {
 	if got := enriched.TotalImporte.Importe; !got.Equal(xbuilder.MustDecimal("236").Decimal) {
 		t.Errorf("importe = %s, want 236", got)
 	}
-	if enriched.Moneda != "PEN" {
-		t.Errorf("moneda = %q, want PEN", enriched.Moneda)
+	if enriched.Moneda == nil || *enriched.Moneda != "PEN" {
+		t.Errorf("moneda = %v, want PEN", enriched.Moneda)
 	}
-	if enriched.FechaEmision == nil || *enriched.FechaEmision != defaults.FechaEmision {
+	if enriched.FechaEmision == nil || *enriched.FechaEmision != *defaults.FechaEmision {
 		t.Errorf("fecha_emision = %v", enriched.FechaEmision)
 	}
 }
 
 func TestBuildReportsValidationErrors(t *testing.T) {
 	document := invoice()
-	document.Detalles[0].IgvTipo = "XX"
-	_, err := xbuilder.Build(context.Background(), document, xbuilder.TodayDefaults())
+	document.Detalles[0].IgvTipo = xbuilder.Ptr("XX")
+	_, err := xbuilder.Build(context.Background(), document, xbuilder.Defaults{})
 	var xerr *xhandler.Error
-	if !errors.As(err, &xerr) || xerr.Kind != xhandler.ErrValidation {
+	if !errors.As(err, &xerr) || xerr.Kind != xhandler.KindValidation {
 		t.Fatalf("expected a validation error, got %v", err)
+	}
+}
+
+// Without a date, the core uses today in Peru (UTC-5): it needs the real clock.
+func TestEnrichDefaultsToTodayInPeru(t *testing.T) {
+	before := xbuilder.DateOf(time.Now().In(time.FixedZone("PET", -5*60*60)))
+	enriched, err := xbuilder.Enrich(context.Background(), invoice(), xbuilder.Defaults{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := xbuilder.DateOf(time.Now().In(time.FixedZone("PET", -5*60*60)))
+	if got := *enriched.FechaEmision; got != before && got != after {
+		t.Errorf("fecha_emision = %s, want %s", got, before)
+	}
+}
+
+func TestEnrichRejectsNilDocuments(t *testing.T) {
+	if _, err := xbuilder.Enrich(context.Background(), (*xbuilder.Invoice)(nil), xbuilder.Defaults{}); err == nil {
+		t.Fatal("expected an error")
 	}
 }

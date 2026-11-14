@@ -10,7 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/project-openubl/xhandler-go"
 	"github.com/project-openubl/xhandler-go/internal/conformance"
 	"github.com/project-openubl/xhandler-go/internal/core"
 )
@@ -69,8 +68,8 @@ func TestVersionMatchesSyncedCore(t *testing.T) {
 
 func TestErrorsAreTyped(t *testing.T) {
 	err := core.Invoke(context.Background(), "nope", nil, nil)
-	var xerr *xhandler.Error
-	if !errors.As(err, &xerr) || xerr.Kind != xhandler.ErrInvalidRequest {
+	var xerr *core.Error
+	if !errors.As(err, &xerr) || xerr.Kind != "invalid_request" {
 		t.Fatalf("expected an invalid_request error, got %v", err)
 	}
 }
