@@ -39,6 +39,9 @@ type Credentials struct {
 	// (guias de remision), from SUNAT's SOL menu.
 	ClientID     string `json:"client_id,omitempty"`
 	ClientSecret string `json:"client_secret,omitempty"`
+	// Token is a token of the guias obtained elsewhere; when set, it is used
+	// as is instead of asking SUNAT for one.
+	Token string `json:"-"`
 }
 
 // Target is a SUNAT service for a file or a ticket.

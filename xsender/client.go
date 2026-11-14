@@ -23,10 +23,17 @@ import (
 // SunatClient sends the requests to SUNAT and keeps the OAuth tokens of the
 // guias de remision. Share one between the FileSenders of several companies.
 type SunatClient struct {
+	// SecurityAPIURL is where the tokens of the guias are requested; SUNAT's
+	// when empty. Set it before the first call.
+	SecurityAPIURL string
+
 	http   *http.Client
 	mu     sync.Mutex
 	tokens map[string]token
 }
+
+// Pauses before retrying a request SUNAT's front proxy refused (rate limiting).
+var rateLimitPauses = []time.Duration{time.Second, 2 * time.Second}
 
 type token struct {
 	value       string
@@ -79,25 +86,51 @@ func call(name string, args map[string]any) map[string]any {
 	return map[string]any{name: args}
 }
 
-// exchange sends a call and reads its answer into answer. A REST call first
-// gets a token; a token SUNAT rejects (HTTP 401) is forgotten.
+// exchange sends a call and reads its answer into answer. SUNAT revokes the
+// tokens of the guias before they expire: a REST call rejected with HTTP 401
+// is retried once with a new token. A SOAP call refused by SUNAT's rate
+// limiting is retried after a pause.
 func (c *SunatClient) exchange(ctx context.Context, request any, rest bool, credentials Credentials, answer any) error {
-	var tok *string
 	if rest {
-		value, err := c.token(ctx, credentials)
+		status, body, err := c.sendWithToken(ctx, request, credentials)
+		if err == nil && status == http.StatusUnauthorized && credentials.Token == "" {
+			c.forget(credentials)
+			status, body, err = c.sendWithToken(ctx, request, credentials)
+		}
 		if err != nil {
 			return err
 		}
-		tok = &value
+		return parse(ctx, request, status, body, answer)
 	}
-	status, body, err := c.send(ctx, request, credentials, tok)
-	if err != nil {
-		return err
+
+	for attempt := 0; ; attempt++ {
+		status, body, err := c.send(ctx, request, credentials, nil)
+		if err != nil {
+			return err
+		}
+		err = parse(ctx, request, status, body, answer)
+		var xerr *core.Error
+		if attempt == len(rateLimitPauses) || !errors.As(err, &xerr) || xerr.Kind != "rate_limited" {
+			return err
+		}
+		select {
+		case <-time.After(rateLimitPauses[attempt]):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
-	if rest && status == http.StatusUnauthorized {
-		c.forget(credentials)
-	}
+}
+
+func parse(ctx context.Context, request any, status int, body string, answer any) error {
 	return core.Invoke(ctx, "parse", map[string]any{"call": request, "status": status, "body": body}, answer)
+}
+
+func (c *SunatClient) sendWithToken(ctx context.Context, request any, credentials Credentials) (int, string, error) {
+	tok, err := c.token(ctx, credentials)
+	if err != nil {
+		return 0, "", err
+	}
+	return c.send(ctx, request, credentials, &tok)
 }
 
 // send builds the request of the call with the core and sends it.
@@ -143,9 +176,12 @@ func (c *SunatClient) send(ctx context.Context, request any, credentials Credent
 	return response.StatusCode, string(body), nil
 }
 
-// token returns a cached token, reused until a minute before it expires, or
-// asks SUNAT for a new one.
+// token returns the token of the credentials, a cached one (reused until a
+// minute before it expires), or asks SUNAT for a new one.
 func (c *SunatClient) token(ctx context.Context, credentials Credentials) (string, error) {
+	if credentials.Token != "" {
+		return credentials.Token, nil
+	}
 	key := credentials.ClientID + ":" + credentials.Username
 	c.mu.Lock()
 	cached, ok := c.tokens[key]
@@ -160,7 +196,8 @@ func (c *SunatClient) token(ctx context.Context, credentials Credentials) (strin
 			ExpiresIn   int64  `json:"expires_in"`
 		} `json:"token"`
 	}
-	if err := c.exchange(ctx, "token", false, credentials, &answer); err != nil {
+	request := call("token", map[string]any{"url": nilIfEmpty(c.SecurityAPIURL)})
+	if err := c.exchange(ctx, request, false, credentials, &answer); err != nil {
 		return "", err
 	}
 	lifetime := time.Duration(max(answer.Token.ExpiresIn-60, 0)) * time.Second
@@ -168,6 +205,13 @@ func (c *SunatClient) token(ctx context.Context, credentials Credentials) (strin
 	c.tokens[key] = token{answer.Token.AccessToken, time.Now().Add(lifetime)}
 	c.mu.Unlock()
 	return answer.Token.AccessToken, nil
+}
+
+func nilIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func (c *SunatClient) forget(credentials Credentials) {

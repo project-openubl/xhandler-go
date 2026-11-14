@@ -137,7 +137,28 @@ func TestVerifyFileTicketInProgress(t *testing.T) {
 	}
 }
 
-// Guias de remision: one token is reused until SUNAT rejects it (HTTP 401)
+// SUNAT's front proxy answers some requests with a 401 page: they are retried
+func TestRateLimitedRequestsAreRetried(t *testing.T) {
+	status, body := answer(t, "send_file_cdr")
+	server := &sunat{}
+	server.handle = func(*http.Request, string) (int, string) {
+		if len(server.requests) == 1 {
+			return 401, "<html><title>401 Authorization Required</title></html>"
+		}
+		return status, body
+	}
+
+	result, err := server.sender(xsender.BetaURLs).SendFile(context.Background(), document(t, "F001-1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.CDR == nil || len(server.requests) != 2 {
+		t.Fatalf("got %+v after %d requests", result, len(server.requests))
+	}
+}
+
+// Guias de remision: one token is reused until SUNAT rejects it (HTTP 401),
+// then the call is retried with a new one
 func TestGuiasReuseTheTokenUntilRejected(t *testing.T) {
 	var tokens, sends int
 	server := &sunat{handle: func(r *http.Request, body string) (int, string) {
@@ -161,12 +182,37 @@ func TestGuiasReuseTheTokenUntilRejected(t *testing.T) {
 	guia := document(t, "despatch-advice-T")
 
 	for range 3 {
-		if _, err := sender.SendFile(context.Background(), guia); err != nil {
+		result, err := sender.SendFile(context.Background(), guia)
+		if err != nil {
 			t.Fatal(err)
 		}
+		if result.Ticket == nil {
+			t.Fatalf("expected a ticket, got %+v", result)
+		}
 	}
-	if tokens != 2 || sends != 3 {
-		t.Fatalf("got %d tokens for %d sends, want 2 for 3", tokens, sends)
+	// The second send is rejected once and retried with a new token
+	if tokens != 2 || sends != 4 {
+		t.Fatalf("got %d tokens for %d sends, want 2 for 4", tokens, sends)
+	}
+}
+
+func TestTheSecurityAPIURLCanBeSet(t *testing.T) {
+	var tokenURL string
+	server := &sunat{handle: func(r *http.Request, _ string) (int, string) {
+		if strings.Contains(r.URL.Path, "/oauth2/token/") {
+			tokenURL = r.URL.String()
+			return 200, `{"access_token":"the-token","expires_in":3600}`
+		}
+		return 200, `{"numTicket":"a7b3c1d2-0001"}`
+	}}
+	sender := server.sender(xsender.ProductionURLs)
+	sender.Client.SecurityAPIURL = "http://localhost:8080"
+
+	if _, err := sender.SendFile(context.Background(), document(t, "despatch-advice-T")); err != nil {
+		t.Fatal(err)
+	}
+	if tokenURL != "http://localhost:8080/v1/clientessol/client-id/oauth2/token/" {
+		t.Fatalf("token requested at %s", tokenURL)
 	}
 }
 

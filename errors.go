@@ -29,6 +29,9 @@ const (
 	// KindResponse means the answer of SUNAT can't be read, e.g. an HTML
 	// error page.
 	KindResponse ErrorKind = "response"
+	// KindRateLimited means SUNAT's front proxy refused the request; the
+	// SunatClient already retried it.
+	KindRateLimited ErrorKind = "rate_limited"
 )
 
 // CoreVersion is the version of the embedded xhandler core.
