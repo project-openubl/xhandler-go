@@ -27,7 +27,8 @@ locally. Nothing is pushed.
 - Models are generated from the JSON Schema of the Rust models by
   `xhandler-wasm/codegen.py`: Go structs, pydantic v2 models, and Java Lombok classes.
 - `make -C xhandler-wasm dist` (Rust) writes the wasm, schema, models and corpus;
-  `make sync` (each host) copies them.
+  `make sync` (each host) copies them. `RUST_REPO` defaults to `../xhandler-rust`. Until
+  `feat/wasm-bindings` is merged there, run `make sync RUST_REPO=../xhandler-rust-wasm`.
 
 ## Verification (last run)
 
@@ -44,7 +45,7 @@ locally. Nothing is pushed.
 - Go: `go test -race ./...`, `golangci-lint` (0 issues) and `CGO_ENABLED=0 go build`
   all pass.
 - Python: 1126 tests pass on 3.10 and 3.14; ruff and mypy are clean.
-- Java: `mvn install -Pexamples` passes (1433 tests). Quarkus integration tests: xbuilder
+- Java: `mvn install -Pexamples` passes (1434 tests). Quarkus integration tests: xbuilder
   259/259, xsender 2/2. The existing SUNAT beta suite (`-Dxsender.sunat-beta=true`)
   passes 4/4.
 - End to end (`XHANDLER_E2E=true`): create, sign and send an invoice to **SUNAT beta**,
@@ -107,4 +108,11 @@ locally. Nothing is pushed.
   message, and the HTTP code (422) becomes the fault code. Should the detailed code be
   used instead?
 - Java `XSender`/`SunatResponse` kept their API, while Go and Python use `FileSender`
-  (Rust's name). Should the names be unified?
+  (Rust's name). Should the names be unified? Java's `verifyTicket(xml, ticket)` is
+  Go's `VerifyFileTicket`, not its `VerifyTicket(target, ticket)`.
+- Java `io.github.project.openubl.xbuilder.signature.KeyPair` clashes by name with
+  `java.security.KeyPair`. Should it be renamed (e.g. `SigningKey`)?
+- Java's live beta suite uses `-Dxsender.sunat-beta=true`, while every e2e test uses
+  `XHANDLER_E2E=true`. Should they be unified?
+- Each milestone was reviewed by a subagent. The findings above are the ones left
+  open; all the others were applied.
