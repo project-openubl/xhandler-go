@@ -1,4 +1,4 @@
-module github.com/project-openubl/xhandler-go
+module github.com/project-openubl/xhandler-go/v6
 
 go 1.25.0
 

@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/project-openubl/xhandler-go/internal/core"
+	"github.com/project-openubl/xhandler-go/v6/internal/core"
 )
 
 // SunatClient sends the requests to SUNAT and keeps the OAuth tokens of the

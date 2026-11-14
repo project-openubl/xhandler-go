@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/project-openubl/xhandler-go/internal/core"
+	"github.com/project-openubl/xhandler-go/v6/internal/core"
 )
 
 // Document is any document xbuilder can enrich and render: *Invoice,

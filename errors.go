@@ -3,7 +3,7 @@
 // WebAssembly module: see the xbuilder, xsigner and xsender packages.
 package xhandler
 
-import "github.com/project-openubl/xhandler-go/internal/core"
+import "github.com/project-openubl/xhandler-go/v6/internal/core"
 
 // Error is an error reported by the xhandler core; check its Kind with
 // errors.As.

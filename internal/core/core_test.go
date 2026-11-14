@@ -10,8 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/project-openubl/xhandler-go/internal/conformance"
-	"github.com/project-openubl/xhandler-go/internal/core"
+	"github.com/project-openubl/xhandler-go/v6/internal/conformance"
+	"github.com/project-openubl/xhandler-go/v6/internal/core"
 )
 
 const corpus = "../../testdata/conformance"
