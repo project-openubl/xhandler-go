@@ -1,33 +1,28 @@
 # xhandler-go
 
-Create, sign and send the electronic documents (UBL XML) of SUNAT Peru from Go.
+[![License](https://img.shields.io/github/license/project-openubl/xhandler-go?logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
+[![CI](https://github.com/project-openubl/xhandler-go/actions/workflows/ci.yml/badge.svg)](https://github.com/project-openubl/xhandler-go/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/project-openubl/xhandler-go.svg)](https://pkg.go.dev/github.com/project-openubl/xhandler-go)
 
-- **xbuilder**: invoices (boletas and facturas), credit and debit notes, guías de
-  remisión, perceptions, retentions, summaries, voided documents and reversions. Only
-  the essential data is required: defaults, taxes and totals are computed.
-- **xsigner**: the enveloped RSA-SHA256 XML signature SUNAT requires (PEM or PKCS#12).
-- **xsender**: SUNAT's SOAP services (billService, consult and validation) and the REST
-  API of the guías de remisión, with the CDR, tickets and faults already read.
+Crea, firma y envía los comprobantes electrónicos (XML UBL) de la SUNAT del Perú desde Go. Go puro,
+sin cgo.
 
-Pure Go, no cgo: the work is done by the [xhandler](https://github.com/project-openubl/xhandler-rust)
-Rust core, embedded as a WebAssembly module and run with [wazero](https://wazero.io). The
-Python and Java libraries use the same core, so the three produce the same XML,
-signatures and requests.
-
-## Install
+## Instalación
 
 ```shell
 go get github.com/project-openubl/xhandler-go
 ```
 
-Go 1.25 or newer.
+Go 1.25 o superior, en cualquier sistema operativo y arquitectura que soporte Go.
 
-## Usage
+## Uso
+
+Con los paquetes `xbuilder`, `xsigner` y `xsender` de `github.com/project-openubl/xhandler-go`:
 
 ```go
 ctx := context.Background()
 
-// Create
+// Crear
 invoice := &xbuilder.Invoice{
 	SerieNumero: "F001-1",
 	Proveedor:   xbuilder.Proveedor{Ruc: "12345678912", RazonSocial: "Softgreen S.A.C."},
@@ -40,13 +35,13 @@ invoice := &xbuilder.Invoice{
 		{Descripcion: "Item", Cantidad: xbuilder.DecimalFromInt(2), Precio: xbuilder.Ptr(xbuilder.MustDecimal("100.00"))},
 	},
 }
-xml, err := xbuilder.Build(ctx, invoice, xbuilder.Defaults{}) // today in Peru, current tax rates
+xml, err := xbuilder.Build(ctx, invoice, xbuilder.Defaults{}) // fecha de hoy en Perú y tasas vigentes
 if err != nil {
 	return err
 }
 
-// Sign
-pfx, err := os.ReadFile("certificate.pfx")
+// Firmar
+pfx, err := os.ReadFile("certificado.pfx")
 if err != nil {
 	return err
 }
@@ -55,7 +50,7 @@ if err != nil {
 	return err
 }
 
-// Send
+// Enviar
 sender := &xsender.FileSender{
 	URLs:        xsender.BetaURLs,
 	Credentials: xsender.Credentials{Username: "12345678959MODDATOS", Password: "MODDATOS"},
@@ -67,33 +62,32 @@ if err != nil {
 switch {
 case result.CDR != nil:
 	fmt.Println(result.CDR.Status, result.CDR.Description) // ACEPTADO La Factura numero F001-1, ha sido aceptada
-case result.Ticket != nil: // summaries, voided documents, guías: verify the ticket later
+case result.Ticket != nil: // resúmenes, bajas y guías: consulta el ticket después
 	fmt.Println(sender.VerifyFileTicket(ctx, signed, *result.Ticket))
 case result.Fault != nil:
-	fmt.Println(result.Fault.Status, result.Fault.Message)
+	fmt.Println(result.Fault.Status, result.Fault.Code, result.Fault.Message)
 }
 ```
 
-- `xbuilder.Enrich` returns the document with the computed values (taxes, totals,
-  legends) instead of the XML.
-- Errors of the core are `*xhandler.Error` with a `Kind`: `xhandler.KindValidation`
-  (e.g. an unknown catalog code), `KindInvalidKey`, `KindResponse`...
-- Guías de remisión need `xsender.ProductionURLs` (SUNAT has no beta for them) and the
-  `ClientID`/`ClientSecret` of the API client. Share one `xsender.SunatClient` between
-  the `FileSender`s of several companies: it keeps the connections and the tokens.
+- **Crear**: facturas, boletas, notas de crédito y débito, guías de remisión, percepciones,
+  retenciones, resúmenes diarios, bajas y reversiones. `xbuilder.Enrich` devuelve el documento con
+  los valores calculados (impuestos, totales, leyendas) en lugar del XML. `xbuilder.Defaults`
+  cambia la fecha de emisión o las tasas.
+- **Firmar**: `xsigner.FromPEM(llavePrivada, certificado)` para archivos PEM.
+- **Enviar**: `SendPack` envía varias facturas en un zip. `xsender.SunatClient` también tiene los
+  servicios de consulta y validación (`GetStatus`, `GetStatusCDR`, `ValidateCDP`, `ValidateFile`).
+  Si envías por varias empresas, comparte un `SunatClient` (conexiones y tokens) entre sus
+  `FileSender`.
+- **Guías de remisión**: usan `xsender.ProductionURLs` (la SUNAT no tiene beta para ellas) y el
+  `ClientID`/`ClientSecret` de la API.
+- **Errores**: los del núcleo son `*xhandler.Error` con un `Kind`: `xhandler.KindValidation` (p. ej.
+  un código de catálogo inválido), `KindInvalidKey`, `KindResponse`, `KindRateLimited`... Los rechazos
+  de la SUNAT no son errores: llegan en `result.Fault`.
 
-## Development
+## Contribuir
 
-The WebAssembly module, the models (`xbuilder/models_gen.go`) and the conformance corpus
-(`testdata/conformance`) come from xhandler-rust:
+Revisa [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```shell
-make sync RUST_REPO=../xhandler-rust   # runs make -C xhandler-wasm dist there and copies the results
-make test                               # every corpus case, raw and through the Go types
-make lint
-XHANDLER_E2E=true go test ./e2e/        # creates, signs and sends an invoice to SUNAT beta
-```
-
-## License
+## Licencia
 
 [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
