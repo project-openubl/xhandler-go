@@ -22,6 +22,9 @@ const (
 	KindValidation ErrorKind = "validation"
 	// KindRender means the XML could not be rendered.
 	KindRender ErrorKind = "render"
+	// KindInvalidKey means the private key or certificate can't be read,
+	// e.g. a wrong keystore password.
+	KindInvalidKey ErrorKind = "invalid_key"
 )
 
 // CoreVersion is the version of the embedded xhandler core.
