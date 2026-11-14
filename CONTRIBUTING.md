@@ -1,81 +1,43 @@
 # Contribuir a xhandler-go
 
-xhandler-go es una capa delgada en Go sobre el
-[núcleo xhandler](https://github.com/project-openubl/xhandler-rust). Crear, firmar, enrutar,
-comprimir, armar las peticiones a la SUNAT y leer sus respuestas ocurre en Rust; Go solo envía las
-peticiones HTTP. Los cambios a esa lógica van en xhandler-rust.
+## Requisitos
 
-## Entorno
+- Go 1.25 o superior.
+- [golangci-lint](https://golangci-lint.run) para `make lint`.
+- Para cambiar el núcleo: un checkout de
+  [xhandler-rust](https://github.com/project-openubl/xhandler-rust) junto a este (revisa
+  [su CONTRIBUTING.md](https://github.com/project-openubl/xhandler-rust/blob/main/CONTRIBUTING.md)).
 
-Go 1.25 o superior. `make sync` necesita además un checkout de xhandler-rust junto a este (revisa
-[su CONTRIBUTING.md](https://github.com/project-openubl/xhandler-rust/blob/main/CONTRIBUTING.md)).
+## Comandos
 
 ```shell
 make test                               # go test ./...
 make lint                               # go vet, golangci-lint, build con CGO_ENABLED=0
-go test -race ./...
+go test ./xsender/ -run Token           # un paquete, los tests que coinciden con un nombre
 XHANDLER_E2E=true go test ./e2e/        # crea, firma y envía una factura a la SUNAT beta
 ```
 
-## Estructura
+## Hacer un cambio
 
-| Ruta | |
-|---|---|
-| `internal/core/` | Ejecuta el `xhandler.wasm` incrustado con [wazero](https://wazero.io): un pool de instancias y las llamadas JSON (`Invoke`) |
-| `errors.go` | `xhandler.Error` y sus `Kind` |
-| `xbuilder/` | `Build`, `Enrich`; `models_gen.go` es generado; `types.go` tiene `Decimal`, `Date`, `Time` |
-| `xsigner/` | `Sign` y `SigningKey` |
-| `xsender/` | `FileSender` y `SunatClient`: HTTP, timeouts, reintentos, caché de tokens OAuth de las guías |
-| `internal/conformance/` | Lee el corpus de conformidad |
-| `testdata/conformance/` | El corpus, copiado desde xhandler-rust |
-| `e2e/` | Prueba contra la SUNAT beta (opcional) |
+- Crear, firmar, armar las peticiones a la SUNAT y leer sus respuestas ocurre en el núcleo de
+  Rust (`internal/core/xhandler.wasm`). Esos cambios van en xhandler-rust; luego aquí:
 
-## Cómo funciona
+  ```shell
+  make sync RUST_REPO=../xhandler-rust
+  ```
 
-El núcleo expone un solo punto de entrada JSON: la petición es `{"op", "input"}` y la respuesta
-`{"ok": ...}` o `{"error": {"kind", "message"}}`. `internal/core` compila el módulo una vez y
-mantiene instancias libres; una instancia atiende una llamada a la vez y se descarta si falla (un
-panic en el núcleo).
+  `make sync` copia el núcleo, los modelos (`xbuilder/models_gen.go`) y el corpus de conformidad
+  (`testdata/conformance/`). No los edites a mano.
+- En Go está lo que necesita IO: el cliente HTTP, los reintentos y el caché de tokens
+  (`xsender/`).
+- Los nombres (`FileSender`, `SunatClient`, `SigningKey`...) se mantienen iguales en Go, Python y
+  Java.
 
-`xsender` pide al núcleo la petición HTTP de cada llamada (op `request`), la envía con `net/http` y
-le entrega la respuesta (op `parse`). Se encarga de lo que necesita IO: timeouts (30s/120s), un
-reintento si la conexión falla, reintentos tras respuestas `rate_limited` (1s y 2s) y los tokens de
-las guías (reutilizados hasta un minuto antes de expirar, un pedido a la vez, reintento con un token
-nuevo ante HTTP 401).
+## Pull requests
 
-## Archivos generados
-
-Vienen de xhandler-rust y no se editan a mano:
-
-- `internal/core/xhandler.wasm` e `internal/core/VERSION`
-- `xbuilder/models_gen.go`
-- `testdata/conformance/`
-
-```shell
-make sync RUST_REPO=../xhandler-rust    # corre make -C xhandler-wasm dist allá y los copia
-```
-
-Un cambio de modelos o de comportamiento empieza en xhandler-rust; luego `make sync` aquí, corrige
-lo que señalen el compilador o los tests y abre un PR con los archivos copiados.
-
-## Tests
-
-- `internal/core`: cada caso del corpus por el punto de entrada JSON.
-- `xbuilder`, `xsigner`: los casos del corpus a través de los tipos de Go. Las respuestas del núcleo
-  se decodifican rechazando campos desconocidos, así que un modelo desactualizado falla aquí.
-- `xsender`: una SUNAT falsa (`http.RoundTripper`) responde con las respuestas del corpus: CDR,
-  faults, rate limiting, tokens de guías, fallos de conexión.
-
-## Convenciones
-
-- Commits y títulos de PR con [Conventional Commits](https://www.conventionalcommits.org/)
-  (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`...); los cambios incompatibles llevan `!`.
-- Checks requeridos: `lint` y `test` en Linux, macOS y Windows. Los PRs de Dependabot se fusionan
-  solos cuando pasan.
-- Los nombres siguen a las otras librerías (`FileSender`, `SunatClient`, `SigningKey`...):
-  mantenlos alineados con Python y Java.
-
-## Licencia
+- Título con [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
+  `docs:`...); los cambios incompatibles llevan `!`.
+- Deben pasar `lint` y `test` (Linux, macOS y Windows).
 
 Al contribuir aceptas que tus contribuciones se distribuyan bajo la
 [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

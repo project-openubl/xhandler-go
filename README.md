@@ -4,17 +4,8 @@
 [![CI](https://github.com/project-openubl/xhandler-go/actions/workflows/ci.yml/badge.svg)](https://github.com/project-openubl/xhandler-go/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/project-openubl/xhandler-go.svg)](https://pkg.go.dev/github.com/project-openubl/xhandler-go)
 
-Crea, firma y envía los comprobantes electrónicos (XML UBL) de la SUNAT del Perú desde Go.
-
-| Paquete | Qué hace |
-|---|---|
-| `xbuilder` | Crea el XML de facturas, boletas, notas de crédito y débito, guías de remisión, percepciones, retenciones, resúmenes diarios, comunicaciones de baja y reversiones. Solo das los datos esenciales: los valores por defecto, impuestos y totales se calculan |
-| `xsigner` | Firma el XML (RSA-SHA256, certificados PEM o PKCS#12) |
-| `xsender` | Envía a la SUNAT (servicios SOAP y API REST de guías) y lee el CDR, tickets y errores |
-
-Go puro, sin cgo: el trabajo lo hace el [núcleo xhandler](https://github.com/project-openubl/xhandler-rust),
-incrustado como un módulo WebAssembly. Las librerías de Python y Java usan el mismo núcleo, así que
-las tres producen el mismo XML, las mismas firmas y las mismas peticiones.
+Crea, firma y envía los comprobantes electrónicos (XML UBL) de la SUNAT del Perú desde Go. Go puro,
+sin cgo.
 
 ## Instalación
 
@@ -25,6 +16,8 @@ go get github.com/project-openubl/xhandler-go
 Go 1.25 o superior, en cualquier sistema operativo y arquitectura que soporte Go.
 
 ## Uso
+
+Con los paquetes `xbuilder`, `xsigner` y `xsender` de `github.com/project-openubl/xhandler-go`:
 
 ```go
 ctx := context.Background()
@@ -76,8 +69,10 @@ case result.Fault != nil:
 }
 ```
 
-- **Crear**: `xbuilder.Enrich` devuelve el documento con los valores calculados (impuestos,
-  totales, leyendas) en lugar del XML. `xbuilder.Defaults` cambia la fecha de emisión o las tasas.
+- **Crear**: facturas, boletas, notas de crédito y débito, guías de remisión, percepciones,
+  retenciones, resúmenes diarios, bajas y reversiones. `xbuilder.Enrich` devuelve el documento con
+  los valores calculados (impuestos, totales, leyendas) en lugar del XML. `xbuilder.Defaults`
+  cambia la fecha de emisión o las tasas.
 - **Firmar**: `xsigner.FromPEM(llavePrivada, certificado)` para archivos PEM.
 - **Enviar**: `SendPack` envía varias facturas en un zip. `xsender.SunatClient` también tiene los
   servicios de consulta y validación (`GetStatus`, `GetStatusCDR`, `ValidateCDP`, `ValidateFile`).
@@ -91,7 +86,7 @@ case result.Fault != nil:
 
 ## Contribuir
 
-Revisa [CONTRIBUTING.md](CONTRIBUTING.md). Preguntas e ideas en el
+Revisa [CONTRIBUTING.md](CONTRIBUTING.md). Preguntas en el
 [chat de Zulip](https://projectopenubl.zulipchat.com/).
 
 ## Licencia
