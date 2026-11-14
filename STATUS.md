@@ -118,9 +118,10 @@ locally. Nothing is pushed.
     taking the service URL.
   - `SigningKey` instead of `KeyPair`.
 
-## Open questions
-
-- Java's live beta suite uses `-Dxsender.sunat-beta=true`, while every e2e test uses
-  `XHANDLER_E2E=true`. Should they be unified?
-- Java keeps `CompanyURLs`/`CompanyCredentials` and `XSenderException` (Go/Python:
-  `URLs`/`Credentials` and the core error). Should these be renamed as well?
+- Java `CompanyURLs`/`CompanyCredentials` became `URLs`/`Credentials`, and
+  `XSenderException` was removed, as in Go and Python:
+  - errors from the core are `XhandlerException` with their `ErrorKind`;
+  - network failures are `UncheckedIOException`;
+  - invalid arguments are `IllegalArgumentException`.
+- Java's live beta suite keeps its own switch (`-Dxsender.sunat-beta=true`), as decided.
+  Only its type names changed.
