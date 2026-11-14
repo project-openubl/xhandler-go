@@ -31,7 +31,7 @@ type caseInput struct {
 	} `json:"key"`
 }
 
-func (in caseInput) keyPair() xsigner.KeyPair {
+func (in caseInput) signingKey() xsigner.SigningKey {
 	if in.Key.PEM != nil {
 		return xsigner.FromPEM(in.Key.PEM.PrivateKey, in.Key.PEM.Certificate)
 	}
@@ -54,10 +54,10 @@ func signCase(t *testing.T, name string) caseInput {
 }
 
 func TestKeyPairHidesItsSecrets(t *testing.T) {
-	key := signCase(t, "pem/min_data_ruc").keyPair()
+	key := signCase(t, "pem/min_data_ruc").signingKey()
 	printed := fmt.Sprintf("%v %+v %s %#v", key, key, key, key)
 	if strings.Contains(printed, "PRIVATE KEY") {
-		t.Fatalf("the key pair shows its private key: %s", printed)
+		t.Fatalf("the signing key shows its private key: %s", printed)
 	}
 }
 
@@ -72,7 +72,7 @@ func TestSignCorpus(t *testing.T) {
 			if err := json.Unmarshal(c.Input, &in); err != nil {
 				t.Fatal(err)
 			}
-			signed, err := xsigner.Sign(context.Background(), in.XML, in.keyPair())
+			signed, err := xsigner.Sign(context.Background(), in.XML, in.signingKey())
 
 			if c.Expected.Error != nil {
 				var xerr *xhandler.Error
@@ -114,7 +114,7 @@ func TestSignsBuiltDocuments(t *testing.T) {
 	}
 
 	key := signCase(t, "pkcs12/llama")
-	signed, err := xsigner.Sign(context.Background(), []byte(xml), key.keyPair())
+	signed, err := xsigner.Sign(context.Background(), []byte(xml), key.signingKey())
 	if err != nil {
 		t.Fatal(err)
 	}

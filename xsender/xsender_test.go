@@ -27,6 +27,7 @@ type sunat struct {
 	mu       sync.Mutex
 	requests []*http.Request
 	handle   func(r *http.Request, body string) (int, string)
+	headers  http.Header // of every answer
 }
 
 func (s *sunat) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -38,7 +39,7 @@ func (s *sunat) RoundTrip(r *http.Request) (*http.Response, error) {
 	if status == 0 {
 		return nil, &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("connection refused")}
 	}
-	return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(answer)), Request: r}, nil
+	return &http.Response{StatusCode: status, Header: s.headers, Body: io.NopCloser(strings.NewReader(answer)), Request: r}, nil
 }
 
 func (s *sunat) count() int {
@@ -291,5 +292,32 @@ func TestGetStatusCDR(t *testing.T) {
 	}
 	if server.requests[0].Header.Get("SOAPAction") != "urn:getStatusCdr" {
 		t.Errorf("unexpected SOAPAction %q", server.requests[0].Header.Get("SOAPAction"))
+	}
+}
+
+// Guia errors carry the HTTP status and SUNAT's code, from the body or a header
+func TestGuiaErrorsCarryBothCodes(t *testing.T) {
+	respond := func(r *http.Request, _ string) (int, string) {
+		if strings.Contains(r.URL.Path, "/oauth2/token/") {
+			return 200, `{"access_token":"the-token","expires_in":3600}`
+		}
+		return 422, `{"cod":"422","msg":"Unprocessable Entity","errors":[{"cod":"1033","msg":"Registrado previamente"}]}`
+	}
+	server := &sunat{handle: respond}
+	result, err := server.sender(xsender.ProductionURLs).SendFile(context.Background(), document(t, "despatch-advice-T"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Fault == nil || result.Fault.Code != "1033" || result.Fault.HTTPStatus != 422 {
+		t.Fatalf("unexpected fault %+v", result.Fault)
+	}
+
+	server = &sunat{handle: respond, headers: http.Header{"Cod": {"2033"}}}
+	result, err = server.sender(xsender.ProductionURLs).SendFile(context.Background(), document(t, "despatch-advice-T"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Fault == nil || result.Fault.Code != "2033" || result.Fault.Status != xsender.StatusRejected {
+		t.Fatalf("unexpected fault %+v", result.Fault)
 	}
 }

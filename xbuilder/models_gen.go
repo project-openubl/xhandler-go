@@ -303,12 +303,13 @@ type Envio struct {
 	// Indicadores especiales (SpecialInstructions)
 	Indicadores []string `json:"indicadores,omitempty"`
 	// Catalog18: modalidad de traslado (01=publico, 02=privado)
-	TipoModalidadTraslado string         `json:"tipo_modalidad_traslado,omitempty"`
-	FechaTraslado         Date           `json:"fecha_traslado,omitzero"`
-	Transportista         *Transportista `json:"transportista,omitempty"`
-	Choferes              []Chofer       `json:"choferes,omitempty"`
-	Vehiculo              *Vehiculo      `json:"vehiculo,omitempty"`
-	Contenedores          []string       `json:"contenedores,omitempty"`
+	TipoModalidadTraslado string `json:"tipo_modalidad_traslado,omitempty"`
+	// Fecha de inicio del traslado; obligatoria
+	FechaTraslado *Date          `json:"fecha_traslado,omitempty"`
+	Transportista *Transportista `json:"transportista,omitempty"`
+	Choferes      []Chofer       `json:"choferes,omitempty"`
+	Vehiculo      *Vehiculo      `json:"vehiculo,omitempty"`
+	Contenedores  []string       `json:"contenedores,omitempty"`
 	// Catalog63
 	Puerto *Puerto `json:"puerto,omitempty"`
 	// Catalog64, used when there is no puerto

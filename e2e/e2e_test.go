@@ -40,7 +40,7 @@ func TestCreateSignAndSendToSunatBeta(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	signed, err := xsigner.Sign(ctx, []byte(xml), testKeyPair(t))
+	signed, err := xsigner.Sign(ctx, []byte(xml), testSigningKey(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,9 +58,9 @@ func TestCreateSignAndSendToSunatBeta(t *testing.T) {
 	}
 }
 
-// testKeyPair is the test certificate of the conformance corpus, the one
+// testSigningKey is the test certificate of the conformance corpus, the one
 // SUNAT beta accepts for RUC 12345678912.
-func testKeyPair(t *testing.T) xsigner.KeyPair {
+func testSigningKey(t *testing.T) xsigner.SigningKey {
 	for _, c := range conformance.Cases(t, "../testdata/conformance", "sign") {
 		if c.Name != "pem/min_data_ruc" {
 			continue
@@ -79,5 +79,5 @@ func testKeyPair(t *testing.T) xsigner.KeyPair {
 		return xsigner.FromPEM(in.Key.PEM.PrivateKey, in.Key.PEM.Certificate)
 	}
 	t.Fatal("no test key in the corpus")
-	return xsigner.KeyPair{}
+	return xsigner.SigningKey{}
 }

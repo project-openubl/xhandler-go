@@ -95,23 +95,23 @@ func call(name string, args map[string]any) map[string]any {
 // limiting is retried after a pause.
 func (c *SunatClient) exchange(ctx context.Context, request any, rest bool, credentials Credentials, answer any) error {
 	if rest {
-		tok, status, body, err := c.sendWithToken(ctx, request, credentials)
-		if err == nil && status == http.StatusUnauthorized && credentials.Token == "" {
+		tok, response, err := c.sendWithToken(ctx, request, credentials)
+		if err == nil && response.Status == http.StatusUnauthorized && credentials.Token == "" {
 			c.forget(credentials, tok)
-			_, status, body, err = c.sendWithToken(ctx, request, credentials)
+			_, response, err = c.sendWithToken(ctx, request, credentials)
 		}
 		if err != nil {
 			return err
 		}
-		return parse(ctx, request, status, body, answer)
+		return parse(ctx, request, response, answer)
 	}
 
 	for attempt := 0; ; attempt++ {
-		status, body, err := c.send(ctx, request, credentials, nil)
+		response, err := c.send(ctx, request, credentials, nil)
 		if err != nil {
 			return err
 		}
-		err = parse(ctx, request, status, body, answer)
+		err = parse(ctx, request, response, answer)
 		var xerr *core.Error
 		if attempt == len(rateLimitPauses) || !errors.As(err, &xerr) || xerr.Kind != "rate_limited" {
 			return err
@@ -124,22 +124,35 @@ func (c *SunatClient) exchange(ctx context.Context, request any, rest bool, cred
 	}
 }
 
-func parse(ctx context.Context, request any, status int, body string, answer any) error {
-	return core.Invoke(ctx, "parse", map[string]any{"call": request, "status": status, "body": body}, answer)
+// httpResponse is the answer of SUNAT, as the core reads it.
+type httpResponse struct {
+	Status  int         `json:"status"`
+	Headers [][2]string `json:"headers"`
+	Body    string      `json:"body"`
+}
+
+func parse(ctx context.Context, request any, response httpResponse, answer any) error {
+	input := map[string]any{
+		"call":    request,
+		"status":  response.Status,
+		"headers": response.Headers,
+		"body":    response.Body,
+	}
+	return core.Invoke(ctx, "parse", input, answer)
 }
 
 // sendWithToken sends a REST call and returns the token it used.
-func (c *SunatClient) sendWithToken(ctx context.Context, request any, credentials Credentials) (string, int, string, error) {
+func (c *SunatClient) sendWithToken(ctx context.Context, request any, credentials Credentials) (string, httpResponse, error) {
 	tok, err := c.token(ctx, credentials)
 	if err != nil {
-		return "", 0, "", err
+		return "", httpResponse{}, err
 	}
-	status, body, err := c.send(ctx, request, credentials, &tok)
-	return tok, status, body, err
+	response, err := c.send(ctx, request, credentials, &tok)
+	return tok, response, err
 }
 
 // send builds the request of the call with the core and sends it.
-func (c *SunatClient) send(ctx context.Context, request any, credentials Credentials, tok *string) (int, string, error) {
+func (c *SunatClient) send(ctx context.Context, request any, credentials Credentials, tok *string) (httpResponse, error) {
 	var req struct {
 		Method  string      `json:"method"`
 		URL     string      `json:"url"`
@@ -148,7 +161,7 @@ func (c *SunatClient) send(ctx context.Context, request any, credentials Credent
 	}
 	input := map[string]any{"call": request, "credentials": credentials, "token": tok}
 	if err := core.Invoke(ctx, "request", input, &req); err != nil {
-		return 0, "", err
+		return httpResponse{}, err
 	}
 
 	do := func() (*http.Response, error) {
@@ -170,14 +183,20 @@ func (c *SunatClient) send(ctx context.Context, request any, credentials Credent
 		response, err = do() // once more: the request never reached SUNAT
 	}
 	if err != nil {
-		return 0, "", fmt.Errorf("xsender: %w", err)
+		return httpResponse{}, fmt.Errorf("xsender: %w", err)
 	}
 	defer response.Body.Close() //nolint:errcheck // the body was read
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return 0, "", fmt.Errorf("xsender: %w", err)
+		return httpResponse{}, fmt.Errorf("xsender: %w", err)
 	}
-	return response.StatusCode, string(body), nil
+	headers := [][2]string{}
+	for name, values := range response.Header {
+		for _, value := range values {
+			headers = append(headers, [2]string{name, value})
+		}
+	}
+	return httpResponse{response.StatusCode, headers, string(body)}, nil
 }
 
 // connectionFailed tells the errors of requests that never reached SUNAT:

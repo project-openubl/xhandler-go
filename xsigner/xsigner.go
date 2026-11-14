@@ -9,16 +9,16 @@ import (
 	"github.com/project-openubl/xhandler-go/internal/core"
 )
 
-// KeyPair is the private key and certificate that sign the documents. The
+// SigningKey is the private key and certificate that sign the documents. The
 // key is checked when signing. It never prints nor marshals its secrets.
-type KeyPair struct {
+type SigningKey struct {
 	pem    *pemKey
 	pkcs12 *pkcs12Key
 }
 
 // String implements fmt.Stringer without the secrets.
-func (k KeyPair) String() string {
-	return "KeyPair(<redacted>)"
+func (k SigningKey) String() string {
+	return "SigningKey(<redacted>)"
 }
 
 type pemKey struct {
@@ -31,20 +31,20 @@ type pkcs12Key struct {
 	Password string `json:"password"`
 }
 
-// FromPEM returns the key pair of a PEM private key (PKCS#8 or PKCS#1) and a
+// FromPEM returns the signing key of a PEM private key (PKCS#8 or PKCS#1) and a
 // PEM X.509 certificate.
-func FromPEM(privateKey, certificate string) KeyPair {
-	return KeyPair{pem: &pemKey{privateKey, certificate}}
+func FromPEM(privateKey, certificate string) SigningKey {
+	return SigningKey{pem: &pemKey{privateKey, certificate}}
 }
 
-// FromPKCS12 returns the key pair stored in a PKCS#12 keystore (.pfx, .p12).
-func FromPKCS12(der []byte, password string) KeyPair {
-	return KeyPair{pkcs12: &pkcs12Key{der, password}}
+// FromPKCS12 returns the signing key stored in a PKCS#12 keystore (.pfx, .p12).
+func FromPKCS12(der []byte, password string) SigningKey {
+	return SigningKey{pkcs12: &pkcs12Key{der, password}}
 }
 
 // Sign returns the XML with its signature. The XML may be UTF-8 or
 // ISO-8859-1 (as declared in its XML declaration); the signed XML is UTF-8.
-func Sign(ctx context.Context, xml []byte, key KeyPair) ([]byte, error) {
+func Sign(ctx context.Context, xml []byte, key SigningKey) ([]byte, error) {
 	type wireKey struct {
 		PEM    *pemKey    `json:"pem,omitempty"`
 		PKCS12 *pkcs12Key `json:"pkcs12,omitempty"`
