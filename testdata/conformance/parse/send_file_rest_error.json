@@ -19,6 +19,7 @@
     "ok": {
       "fault": {
         "code": "422",
+        "sunat_code": 422,
         "message": "Unprocessable Entity; 1033 - El comprobante fue registrado previamente",
         "status": "EXCEPCION"
       }

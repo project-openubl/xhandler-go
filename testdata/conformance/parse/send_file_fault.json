@@ -20,6 +20,7 @@
     "ok": {
       "fault": {
         "code": "soap-env:Client.0111",
+        "sunat_code": 111,
         "message": "No tiene el perfil para enviar comprobantes electronicos - Detalle: Rejected by policy.",
         "status": "EXCEPCION"
       }

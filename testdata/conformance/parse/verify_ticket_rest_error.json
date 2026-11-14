@@ -16,6 +16,7 @@
     "ok": {
       "fault": {
         "code": "2223",
+        "sunat_code": 2223,
         "message": "El documento ya fue informado",
         "status": "RECHAZADO"
       }

@@ -103,11 +103,14 @@ type CDR struct {
 	StatusCode string `json:"status_code,omitempty"`
 }
 
-// Fault is an error answered by SUNAT, e.g. "soap-env:Client.0111".
+// Fault is an error answered by SUNAT.
 type Fault struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Status  Status `json:"status"`
+	// Code is SUNAT's raw code, e.g. "soap-env:Client.0111".
+	Code string `json:"code"`
+	// SunatCode is the number in Code (111), when it has one.
+	SunatCode *uint32 `json:"sunat_code"`
+	Message   string  `json:"message"`
+	Status    Status  `json:"status"`
 }
 
 // SendResult is the answer to a sent file: a CDR, a ticket to verify later

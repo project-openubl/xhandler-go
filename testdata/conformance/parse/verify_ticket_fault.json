@@ -16,6 +16,7 @@
     "ok": {
       "fault": {
         "code": "S:Client.0127",
+        "sunat_code": 127,
         "message": "El ticket no existe",
         "status": "EXCEPCION"
       }
