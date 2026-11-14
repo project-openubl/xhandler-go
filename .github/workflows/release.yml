@@ -1,0 +1,43 @@
+name: Release
+
+# Runs when a release is published (release-tools' release-xhandler workflow creates it after
+# syncing the core of the xhandler-rust release of the same version). The tag is the version:
+# the Go module proxy serves it as github.com/project-openubl/xhandler-go/v6@<tag>.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to check again, e.g. v6.0.0-alpha.1"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # A release carries the core released by xhandler-rust as the same version (release-tools
+      # checks it too, before tagging)
+      - run: make verify-release TAG="$TAG"
+      - run: go test ./...
+      # Ask the Go module proxy for the version, so `go get` and pkg.go.dev see it now
+      # (from outside the module: it can't request a version of itself)
+      - run: go list -m "github.com/project-openubl/xhandler-go/v6@$TAG"
+        working-directory: ${{ runner.temp }}
+        env:
+          GOPROXY: https://proxy.golang.org
+          GOFLAGS: -mod=mod
