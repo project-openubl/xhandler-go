@@ -28,8 +28,11 @@ type SunatClient struct {
 	SecurityAPIURL string
 
 	http   *http.Client
-	mu     sync.Mutex
+	mu     sync.Mutex // guards tokens
 	tokens map[string]token
+	// requesting is held while a token is requested, so concurrent calls
+	// don't revoke each other's tokens
+	requesting sync.Mutex
 }
 
 // Pauses before retrying a request SUNAT's front proxy refused (rate limiting).
@@ -92,10 +95,10 @@ func call(name string, args map[string]any) map[string]any {
 // limiting is retried after a pause.
 func (c *SunatClient) exchange(ctx context.Context, request any, rest bool, credentials Credentials, answer any) error {
 	if rest {
-		status, body, err := c.sendWithToken(ctx, request, credentials)
+		tok, status, body, err := c.sendWithToken(ctx, request, credentials)
 		if err == nil && status == http.StatusUnauthorized && credentials.Token == "" {
-			c.forget(credentials)
-			status, body, err = c.sendWithToken(ctx, request, credentials)
+			c.forget(credentials, tok)
+			_, status, body, err = c.sendWithToken(ctx, request, credentials)
 		}
 		if err != nil {
 			return err
@@ -125,12 +128,14 @@ func parse(ctx context.Context, request any, status int, body string, answer any
 	return core.Invoke(ctx, "parse", map[string]any{"call": request, "status": status, "body": body}, answer)
 }
 
-func (c *SunatClient) sendWithToken(ctx context.Context, request any, credentials Credentials) (int, string, error) {
+// sendWithToken sends a REST call and returns the token it used.
+func (c *SunatClient) sendWithToken(ctx context.Context, request any, credentials Credentials) (string, int, string, error) {
 	tok, err := c.token(ctx, credentials)
 	if err != nil {
-		return 0, "", err
+		return "", 0, "", err
 	}
-	return c.send(ctx, request, credentials, &tok)
+	status, body, err := c.send(ctx, request, credentials, &tok)
+	return tok, status, body, err
 }
 
 // send builds the request of the call with the core and sends it.
@@ -161,9 +166,8 @@ func (c *SunatClient) send(ctx context.Context, request any, credentials Credent
 		return c.http.Do(httpRequest)
 	}
 	response, err := do()
-	var opErr *net.OpError
-	if errors.As(err, &opErr) && opErr.Op == "dial" {
-		response, err = do() // once more when the connection failed
+	if connectionFailed(err) {
+		response, err = do() // once more: the request never reached SUNAT
 	}
 	if err != nil {
 		return 0, "", fmt.Errorf("xsender: %w", err)
@@ -176,18 +180,28 @@ func (c *SunatClient) send(ctx context.Context, request any, credentials Credent
 	return response.StatusCode, string(body), nil
 }
 
+// connectionFailed tells the errors of requests that never reached SUNAT:
+// the connection (DNS included) or the proxy connection failed or timed out.
+func connectionFailed(err error) bool {
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && (opErr.Op == "dial" || opErr.Op == "proxyconnect")
+}
+
 // token returns the token of the credentials, a cached one (reused until a
-// minute before it expires), or asks SUNAT for a new one.
+// minute before it expires), or asks SUNAT for a new one. One token is
+// requested at a time.
 func (c *SunatClient) token(ctx context.Context, credentials Credentials) (string, error) {
 	if credentials.Token != "" {
 		return credentials.Token, nil
 	}
-	key := credentials.ClientID + ":" + credentials.Username
-	c.mu.Lock()
-	cached, ok := c.tokens[key]
-	c.mu.Unlock()
-	if ok && time.Now().Before(cached.reuseBefore) {
-		return cached.value, nil
+	key := tokenKey(credentials)
+	if tok, ok := c.cachedToken(key); ok {
+		return tok, nil
+	}
+	c.requesting.Lock()
+	defer c.requesting.Unlock()
+	if tok, ok := c.cachedToken(key); ok {
+		return tok, nil
 	}
 
 	var answer struct {
@@ -207,6 +221,17 @@ func (c *SunatClient) token(ctx context.Context, credentials Credentials) (strin
 	return answer.Token.AccessToken, nil
 }
 
+func tokenKey(credentials Credentials) string {
+	return credentials.ClientID + ":" + credentials.Username
+}
+
+func (c *SunatClient) cachedToken(key string) (string, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	cached, ok := c.tokens[key]
+	return cached.value, ok && time.Now().Before(cached.reuseBefore)
+}
+
 func nilIfEmpty(s string) *string {
 	if s == "" {
 		return nil
@@ -214,8 +239,11 @@ func nilIfEmpty(s string) *string {
 	return &s
 }
 
-func (c *SunatClient) forget(credentials Credentials) {
+// forget drops the rejected token, unless another call already replaced it.
+func (c *SunatClient) forget(credentials Credentials, rejected string) {
 	c.mu.Lock()
-	delete(c.tokens, credentials.ClientID+":"+credentials.Username)
-	c.mu.Unlock()
+	defer c.mu.Unlock()
+	if key := tokenKey(credentials); c.tokens[key].value == rejected {
+		delete(c.tokens, key)
+	}
 }

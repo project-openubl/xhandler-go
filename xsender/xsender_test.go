@@ -5,7 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -18,7 +21,8 @@ import (
 
 const corpus = "../testdata/conformance"
 
-// sunat answers every request, whatever its host, with handle.
+// sunat answers every request, whatever its host, with handle. A handle
+// returning status 0 fails the connection.
 type sunat struct {
 	mu       sync.Mutex
 	requests []*http.Request
@@ -31,7 +35,16 @@ func (s *sunat) RoundTrip(r *http.Request) (*http.Response, error) {
 	s.requests = append(s.requests, r)
 	s.mu.Unlock()
 	status, answer := s.handle(r, string(body))
+	if status == 0 {
+		return nil, &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("connection refused")}
+	}
 	return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(answer)), Request: r}, nil
+}
+
+func (s *sunat) count() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.requests)
 }
 
 func (s *sunat) sender(urls xsender.URLs) *xsender.FileSender {
@@ -142,7 +155,7 @@ func TestRateLimitedRequestsAreRetried(t *testing.T) {
 	status, body := answer(t, "send_file_cdr")
 	server := &sunat{}
 	server.handle = func(*http.Request, string) (int, string) {
-		if len(server.requests) == 1 {
+		if server.count() == 1 {
 			return 401, "<html><title>401 Authorization Required</title></html>"
 		}
 		return status, body
@@ -152,8 +165,55 @@ func TestRateLimitedRequestsAreRetried(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.CDR == nil || len(server.requests) != 2 {
-		t.Fatalf("got %+v after %d requests", result, len(server.requests))
+	if result.CDR == nil || server.count() != 2 {
+		t.Fatalf("got %+v after %d requests", result, server.count())
+	}
+}
+
+func TestFailedConnectionsAreRetriedOnce(t *testing.T) {
+	status, body := answer(t, "send_file_cdr")
+	server := &sunat{}
+	server.handle = func(*http.Request, string) (int, string) {
+		if server.count() == 1 {
+			return 0, "" // connection refused
+		}
+		return status, body
+	}
+
+	result, err := server.sender(xsender.BetaURLs).SendFile(context.Background(), document(t, "F001-1"))
+	if err != nil || result.CDR == nil || server.count() != 2 {
+		t.Fatalf("got %+v, %v after %d requests", result, err, server.count())
+	}
+}
+
+// A token given in the credentials is used as is, and never replaced
+func TestASuppliedTokenIsUsedAsIs(t *testing.T) {
+	server := &sunat{handle: func(r *http.Request, _ string) (int, string) {
+		if r.Header.Get("Authorization") != "Bearer given-token" {
+			t.Errorf("unexpected request %s %v", r.URL, r.Header)
+		}
+		return 401, `{"cod":"401","msg":"Unauthorized"}`
+	}}
+	sender := server.sender(xsender.ProductionURLs)
+	sender.Credentials = xsender.Credentials{Token: "given-token"}
+
+	if _, err := sender.SendFile(context.Background(), document(t, "despatch-advice-T")); err != nil {
+		t.Fatal(err)
+	}
+	if server.count() != 1 {
+		t.Fatalf("got %d requests, want 1", server.count())
+	}
+}
+
+func TestCredentialsHideTheirSecrets(t *testing.T) {
+	credentials := xsender.Credentials{Username: "user", Password: "the-password", ClientSecret: "the-secret", Token: "the-token"}
+	var logged strings.Builder
+	slog.New(slog.NewTextHandler(&logged, nil)).Info("sending", "credentials", credentials)
+	printed := fmt.Sprintf("%v %+v %#v %s", credentials, credentials, credentials, logged.String())
+	for _, secret := range []string{"the-password", "the-secret", "the-token"} {
+		if strings.Contains(printed, secret) {
+			t.Fatalf("the credentials show %q: %s", secret, printed)
+		}
 	}
 }
 

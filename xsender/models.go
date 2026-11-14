@@ -1,5 +1,10 @@
 package xsender
 
+import (
+	"fmt"
+	"log/slog"
+)
+
 // URLs are the SUNAT services where a company sends its documents.
 type URLs struct {
 	Invoice             string `json:"invoice"`
@@ -42,6 +47,19 @@ type Credentials struct {
 	// Token is a token of the guias obtained elsewhere; when set, it is used
 	// as is instead of asking SUNAT for one.
 	Token string `json:"-"`
+}
+
+// String implements fmt.Stringer without the secrets.
+func (c Credentials) String() string {
+	return fmt.Sprintf("Credentials{Username: %q, <secrets redacted>}", c.Username)
+}
+
+// GoString implements fmt.GoStringer without the secrets.
+func (c Credentials) GoString() string { return c.String() }
+
+// LogValue implements slog.LogValuer without the secrets.
+func (c Credentials) LogValue() slog.Value {
+	return slog.GroupValue(slog.String("username", c.Username))
 }
 
 // Target is a SUNAT service for a file or a ticket.
