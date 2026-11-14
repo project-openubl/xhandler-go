@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -35,6 +36,29 @@ func (in caseInput) keyPair() xsigner.KeyPair {
 		return xsigner.FromPEM(in.Key.PEM.PrivateKey, in.Key.PEM.Certificate)
 	}
 	return xsigner.FromPKCS12(in.Key.PKCS12.DER, in.Key.PKCS12.Password)
+}
+
+func signCase(t *testing.T, name string) caseInput {
+	t.Helper()
+	for _, c := range conformance.Cases(t, corpus, "sign") {
+		if c.Name == name {
+			var in caseInput
+			if err := json.Unmarshal(c.Input, &in); err != nil {
+				t.Fatal(err)
+			}
+			return in
+		}
+	}
+	t.Fatalf("no sign case %s", name)
+	return caseInput{}
+}
+
+func TestKeyPairHidesItsSecrets(t *testing.T) {
+	key := signCase(t, "pem/min_data_ruc").keyPair()
+	printed := fmt.Sprintf("%v %+v %s %#v", key, key, key, key)
+	if strings.Contains(printed, "PRIVATE KEY") {
+		t.Fatalf("the key pair shows its private key: %s", printed)
+	}
 }
 
 // The corpus cases, through the Go API.
@@ -89,14 +113,7 @@ func TestSignsBuiltDocuments(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var key caseInput
-	for _, c := range conformance.Cases(t, corpus, "sign") {
-		if c.Name == "pkcs12/llama" {
-			if err := json.Unmarshal(c.Input, &key); err != nil {
-				t.Fatal(err)
-			}
-		}
-	}
+	key := signCase(t, "pkcs12/llama")
 	signed, err := xsigner.Sign(context.Background(), []byte(xml), key.keyPair())
 	if err != nil {
 		t.Fatal(err)

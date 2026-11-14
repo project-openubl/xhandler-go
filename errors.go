@@ -22,9 +22,13 @@ const (
 	KindValidation ErrorKind = "validation"
 	// KindRender means the XML could not be rendered.
 	KindRender ErrorKind = "render"
-	// KindInvalidKey means the private key or certificate can't be read,
-	// e.g. a wrong keystore password.
+	// KindInvalidKey means the private key or certificate can't be read
+	// (e.g. a wrong keystore password), or the certificate is not the one
+	// of the private key.
 	KindInvalidKey ErrorKind = "invalid_key"
+	// KindResponse means the answer of SUNAT can't be read, e.g. an HTML
+	// error page.
+	KindResponse ErrorKind = "response"
 )
 
 // CoreVersion is the version of the embedded xhandler core.

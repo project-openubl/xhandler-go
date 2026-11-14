@@ -5,24 +5,20 @@ package xsigner
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/project-openubl/xhandler-go/internal/core"
 )
 
 // KeyPair is the private key and certificate that sign the documents. The
-// key is checked when signing.
+// key is checked when signing. It never prints nor marshals its secrets.
 type KeyPair struct {
 	pem    *pemKey
 	pkcs12 *pkcs12Key
 }
 
-// MarshalJSON implements json.Marshaler with the form the core expects.
-func (k KeyPair) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PEM    *pemKey    `json:"pem,omitempty"`
-		PKCS12 *pkcs12Key `json:"pkcs12,omitempty"`
-	}{k.pem, k.pkcs12})
+// String implements fmt.Stringer without the secrets.
+func (k KeyPair) String() string {
+	return "KeyPair(<redacted>)"
 }
 
 type pemKey struct {
@@ -47,12 +43,16 @@ func FromPKCS12(der []byte, password string) KeyPair {
 }
 
 // Sign returns the XML with its signature. The XML may be UTF-8 or
-// ISO-8859-1; the signed XML is UTF-8.
+// ISO-8859-1 (as declared in its XML declaration); the signed XML is UTF-8.
 func Sign(ctx context.Context, xml []byte, key KeyPair) ([]byte, error) {
+	type wireKey struct {
+		PEM    *pemKey    `json:"pem,omitempty"`
+		PKCS12 *pkcs12Key `json:"pkcs12,omitempty"`
+	}
 	input := struct {
 		XML []byte  `json:"xml"`
-		Key KeyPair `json:"key"`
-	}{xml, key}
+		Key wireKey `json:"key"`
+	}{xml, wireKey{key.pem, key.pkcs12}}
 	var signed []byte
 	err := core.Invoke(ctx, "sign", input, &signed)
 	return signed, err
