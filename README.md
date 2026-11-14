@@ -41,10 +41,19 @@ invoice := &xbuilder.Invoice{
 	},
 }
 xml, err := xbuilder.Build(ctx, invoice, xbuilder.Defaults{}) // today in Peru, current tax rates
+if err != nil {
+	return err
+}
 
 // Sign
-pfx, _ := os.ReadFile("certificate.pfx")
+pfx, err := os.ReadFile("certificate.pfx")
+if err != nil {
+	return err
+}
 signed, err := xsigner.Sign(ctx, []byte(xml), xsigner.FromPKCS12(pfx, "password"))
+if err != nil {
+	return err
+}
 
 // Send
 sender := &xsender.FileSender{
@@ -52,6 +61,9 @@ sender := &xsender.FileSender{
 	Credentials: xsender.Credentials{Username: "12345678959MODDATOS", Password: "MODDATOS"},
 }
 result, err := sender.SendFile(ctx, signed)
+if err != nil {
+	return err
+}
 switch {
 case result.CDR != nil:
 	fmt.Println(result.CDR.Status, result.CDR.Description) // ACEPTADO La Factura numero F001-1, ha sido aceptada

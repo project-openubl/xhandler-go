@@ -1,7 +1,7 @@
 # RUST_REPO is a checkout of xhandler-rust; `make sync` copies what its
 # `make -C xhandler-wasm dist` produced: the WebAssembly module, the generated
 # models and the conformance corpus.
-RUST_REPO ?= ../xhandler-rust-wasm
+RUST_REPO ?= ../xhandler-rust
 DIST := $(RUST_REPO)/dist
 
 .PHONY: sync dist test lint
@@ -20,5 +20,5 @@ test:
 
 lint:
 	go vet ./...
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.2 run
 	CGO_ENABLED=0 go build ./...

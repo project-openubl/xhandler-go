@@ -226,8 +226,9 @@ type Detalle struct {
 	// Código estándar GS1/GTIN (StandardItemIdentification).
 	// Incluye el código y el tipo de estructura GTIN (e.g. "GTIN-8", "GTIN-13", "GTIN-14").
 	CodigoGs1 *CodigoGs1 `json:"codigo_gs1,omitempty"`
-	// Precio + bool. True si el precio incluye impuestos, false si no incluye impuestos
-	Precio             *Decimal `json:"precio,omitempty"`
+	// Precio unitario sin impuestos; se calcula de `precio_con_impuestos` si no se da
+	Precio *Decimal `json:"precio,omitempty"`
+	// Precio unitario con impuestos; se calcula de `precio` si no se da
 	PrecioConImpuestos *Decimal `json:"precio_con_impuestos,omitempty"`
 	PrecioReferencia   *Decimal `json:"precio_referencia,omitempty"`
 	// Catalog16
