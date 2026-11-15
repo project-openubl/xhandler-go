@@ -31,8 +31,7 @@ verify-core:
 	./hack/core.sh verify internal/core/xhandler.wasm internal/core/VERSION
 
 verify-release:
-	@test "v$$(cat internal/core/VERSION)" = "$(TAG)" || { echo "error: the core is $$(cat internal/core/VERSION), not $(TAG:v%=%): run make sync CORE=$(TAG:v%=%)" >&2; exit 1; }
-	STRICT=true ./hack/core.sh verify internal/core/xhandler.wasm internal/core/VERSION
+	./hack/core.sh verify-release $(TAG) internal/core/xhandler.wasm internal/core/VERSION
 
 test:
 	go test ./...
