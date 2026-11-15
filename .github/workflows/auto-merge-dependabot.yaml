@@ -1,11 +1,11 @@
 name: Auto-merge Dependabot PRs
 
 # Approves Dependabot PRs and enables auto-merge; the merge happens only once the required
-# checks on master (lint, test) pass. See project-openubl/release-tools README.
+# checks on main (lint, test) pass. See project-openubl/release-tools README.
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
-    branches: [master]
+    branches: [main]
 
 permissions:
   contents: write
