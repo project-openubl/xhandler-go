@@ -3,7 +3,7 @@ package xsender
 import (
 	"context"
 
-	"github.com/project-openubl/xhandler-go/internal/core"
+	"github.com/project-openubl/xhandler-go/v6/internal/core"
 )
 
 // FileSender sends the signed documents of one company. The document decides

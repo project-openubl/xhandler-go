@@ -1,19 +1,37 @@
-# RUST_REPO is a checkout of xhandler-rust; `make sync` copies what its
-# `make -C xhandler-wasm dist` produced: the WebAssembly module, the generated
-# models and the conformance corpus.
+# The core (internal/core/xhandler.wasm, xbuilder/models_gen.go and testdata/conformance)
+# comes from xhandler-rust:
+#
+#   make sync CORE=<version>   the xhandler-rust v<version> release
+#   make sync                  a checkout of xhandler-rust (RUST_REPO), for development
+#   make verify-core           checks that the committed core is the one released as its VERSION
+#   make verify-release TAG=v<version>
+#                              what releasing <version> requires: the core of the xhandler-rust
+#                              release of the same version
 RUST_REPO ?= ../xhandler-rust
-DIST := $(RUST_REPO)/dist
+CORE ?=
+DIST := $(if $(CORE),.dist,$(RUST_REPO)/dist)
 
-.PHONY: sync dist test lint
-
-dist:
-	$(MAKE) -C $(RUST_REPO)/xhandler-wasm dist
+.PHONY: sync dist verify-core verify-release test lint
 
 sync: dist
 	cp $(DIST)/xhandler.wasm $(DIST)/VERSION internal/core/
 	cp $(DIST)/models/go/models_gen.go xbuilder/models_gen.go
 	gofmt -w xbuilder/models_gen.go
 	rm -rf testdata/conformance && cp -r $(DIST)/conformance testdata/conformance
+	$(if $(CORE),rm -rf $(DIST))
+
+dist:
+ifeq ($(CORE),)
+	$(MAKE) -C $(RUST_REPO)/xhandler-wasm dist
+else
+	./hack/core.sh download $(CORE) $(DIST)
+endif
+
+verify-core:
+	./hack/core.sh verify internal/core/xhandler.wasm internal/core/VERSION
+
+verify-release:
+	./hack/core.sh verify-release $(TAG) internal/core/xhandler.wasm internal/core/VERSION
 
 test:
 	go test ./...

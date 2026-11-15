@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/project-openubl/xhandler-go?logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
 [![CI](https://github.com/project-openubl/xhandler-go/actions/workflows/ci.yml/badge.svg)](https://github.com/project-openubl/xhandler-go/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/project-openubl/xhandler-go.svg)](https://pkg.go.dev/github.com/project-openubl/xhandler-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/project-openubl/xhandler-go/v6.svg)](https://pkg.go.dev/github.com/project-openubl/xhandler-go/v6)
 
 Crea, firma y envía los comprobantes electrónicos (XML UBL) de la SUNAT del Perú desde Go. Go puro,
 sin cgo.
@@ -10,14 +10,14 @@ sin cgo.
 ## Instalación
 
 ```shell
-go get github.com/project-openubl/xhandler-go
+go get github.com/project-openubl/xhandler-go/v6
 ```
 
 Go 1.25 o superior, en cualquier sistema operativo y arquitectura que soporte Go.
 
 ## Uso
 
-Con los paquetes `xbuilder`, `xsigner` y `xsender` de `github.com/project-openubl/xhandler-go`:
+Con los paquetes `xbuilder`, `xsigner` y `xsender` de `github.com/project-openubl/xhandler-go/v6`:
 
 ```go
 ctx := context.Background()

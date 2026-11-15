@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/project-openubl/xhandler-go"
-	"github.com/project-openubl/xhandler-go/internal/conformance"
-	"github.com/project-openubl/xhandler-go/xbuilder"
-	"github.com/project-openubl/xhandler-go/xsigner"
+	"github.com/project-openubl/xhandler-go/v6"
+	"github.com/project-openubl/xhandler-go/v6/internal/conformance"
+	"github.com/project-openubl/xhandler-go/v6/xbuilder"
+	"github.com/project-openubl/xhandler-go/v6/xsigner"
 )
 
 const corpus = "../testdata/conformance"

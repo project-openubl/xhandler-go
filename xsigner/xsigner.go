@@ -6,7 +6,7 @@ package xsigner
 import (
 	"context"
 
-	"github.com/project-openubl/xhandler-go/internal/core"
+	"github.com/project-openubl/xhandler-go/v6/internal/core"
 )
 
 // SigningKey is the private key and certificate that sign the documents. The

@@ -14,9 +14,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/project-openubl/xhandler-go"
-	"github.com/project-openubl/xhandler-go/internal/conformance"
-	"github.com/project-openubl/xhandler-go/xsender"
+	"github.com/project-openubl/xhandler-go/v6"
+	"github.com/project-openubl/xhandler-go/v6/internal/conformance"
+	"github.com/project-openubl/xhandler-go/v6/xsender"
 )
 
 const corpus = "../testdata/conformance"
