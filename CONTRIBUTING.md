@@ -30,6 +30,8 @@ XHANDLER_E2E=true go test ./e2e/        # crea, firma y envía una factura a la 
   `make sync` copia el núcleo, los modelos (`xbuilder/models_gen.go`) y el corpus de conformidad
   (`testdata/conformance/`). No los edites a mano. Una versión solo se publica con el núcleo de la
   versión igual de xhandler-rust: `make verify-core` lo comprueba.
+  Estos comandos descargan el `core.sh` de xhandler-rust (`xhandler-wasm/core.sh`) del tag del
+  núcleo; `CORE_SH=<ruta>` usa una copia local, p. ej. al cambiarlo allá.
 - En Go está lo que necesita IO: el cliente HTTP, los reintentos y el caché de tokens
   (`xsender/`).
 - Los nombres (`FileSender`, `SunatClient`, `SigningKey`...) se mantienen iguales en Go, Python y
