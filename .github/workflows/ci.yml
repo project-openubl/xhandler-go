@@ -36,3 +36,5 @@ jobs:
       - run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.2 run
       # The committed core is the xhandler.wasm of the xhandler-rust release in its VERSION
       - run: make verify-core
+      # hack/core.sh is release-tools' xhandler/core.sh
+      - run: make verify-core-script
