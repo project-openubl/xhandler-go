@@ -327,7 +327,8 @@ func TestGuiaErrorsCarryBothCodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Fault == nil || result.Fault.Code != "1033" || result.Fault.HTTPStatus != 422 {
+	if result.Fault == nil || result.Fault.Code != "1033" ||
+		result.Fault.HTTPStatus == nil || *result.Fault.HTTPStatus != 422 {
 		t.Fatalf("unexpected fault %+v", result.Fault)
 	}
 

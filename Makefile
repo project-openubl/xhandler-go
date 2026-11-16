@@ -1,5 +1,5 @@
-# The core (internal/core/xhandler.wasm, xbuilder/models_gen.go and testdata/conformance)
-# comes from xhandler-rust:
+# The core (internal/core/xhandler.wasm, the generated xbuilder/models_gen.go and
+# xsender/models_gen.go, and testdata/conformance) comes from xhandler-rust:
 #
 #   make sync CORE=<version>   the xhandler-rust v<version> release
 #   make sync                  a checkout of xhandler-rust (RUST_REPO), for development
@@ -11,7 +11,8 @@ RUST_REPO ?= ../xhandler-rust
 CORE ?=
 DIST := $(if $(CORE),.dist,$(RUST_REPO)/dist)
 
-SYNCED := internal/core/xhandler.wasm internal/core/VERSION xbuilder/models_gen.go testdata/conformance
+SYNCED := internal/core/xhandler.wasm internal/core/VERSION xbuilder/models_gen.go xsender/models_gen.go \
+	testdata/conformance
 
 # core.sh syncs and verifies a released core. It lives in xhandler-rust, next to the release
 # format it reads, and is downloaded from the tag of the core at hand (from main for a core
@@ -29,7 +30,8 @@ core_sh = $(if $(CORE_SH),bash $(CORE_SH) $(2),script=$$(mktemp) && trap 'rm -f 
 sync: dist
 	cp $(DIST)/xhandler.wasm $(DIST)/VERSION internal/core/
 	cp $(DIST)/models/go/models_gen.go xbuilder/models_gen.go
-	gofmt -w xbuilder/models_gen.go
+	cp $(DIST)/models/go/xsender/models_gen.go xsender/models_gen.go
+	gofmt -w xbuilder/models_gen.go xsender/models_gen.go
 	rm -rf testdata/conformance && cp -r $(DIST)/conformance testdata/conformance
 	$(if $(CORE),rm -rf $(DIST))
 

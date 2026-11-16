@@ -99,81 +99,13 @@ type ValidateCDP struct {
 	NumeroAutorizacion *string `json:"numero_autorizacion"`
 }
 
-// Status is the SUNAT verdict of a document.
-type Status string
-
-const (
-	StatusAccepted   Status = "ACEPTADO"
-	StatusRejected   Status = "RECHAZADO"
-	StatusException  Status = "EXCEPCION"
-	StatusInProgress Status = "EN_PROCESO"
-	StatusUnknown    Status = "UNKNOWN"
-)
-
-// CDR is the receipt SUNAT gives back (Constancia de Recepcion).
-type CDR struct {
-	Zip          []byte   `json:"zip"`
-	ResponseCode string   `json:"response_code"`
-	Description  string   `json:"description"`
-	Notes        []string `json:"notes"`
-	Status       Status   `json:"status"`
-	// StatusCode is the ticket status, only when verifying a ticket.
-	StatusCode string `json:"status_code,omitempty"`
-	// DocumentDescription is, for an accepted guía de remisión, the URL its
-	// printed copy's QR code must encode; nil for other documents (and with
-	// a core older than v6.0.0-alpha.2).
-	DocumentDescription *string `json:"document_description,omitempty"`
-}
-
-// Fault is an error answered by SUNAT.
-type Fault struct {
-	// Code is SUNAT's code as given: the SOAP faultcode (e.g.
-	// "soap-env:Client.0111") or the error code of a REST answer (e.g. "1033").
-	Code string `json:"code"`
-	// SunatCode is the number in Code (111), when it has one.
-	SunatCode *uint32 `json:"sunat_code"`
-	// HTTPStatus is the status of the answer, e.g. 500 for SOAP faults or
-	// 422 for REST errors.
-	HTTPStatus int    `json:"http_status"`
-	Message    string `json:"message"`
-	Status     Status `json:"status"`
-}
-
-// SendResult is the answer to a sent file: a CDR, a ticket to verify later
-// (summaries, voided documents, packs, guias) or a fault.
+// SendResult is the answer to a sent file (a CDR, a ticket to verify later
+// or a fault) and where it went. The answers (SendFileAnswer, VerifyResult,
+// ConsultResult, CDR, Fault...) are generated from the core's schema in
+// models_gen.go.
 type SendResult struct {
-	CDR    *CDR    `json:"cdr"`
-	Ticket *string `json:"ticket"`
-	Fault  *Fault  `json:"fault"`
+	SendFileAnswer
 	// Where the file went and where its ticket is verified.
 	SendTarget         Target  `json:"-"`
 	VerifyTicketTarget *Target `json:"-"`
-}
-
-// VerifyResult is the answer to a ticket: a CDR, no CDR yet (e.g. still in
-// progress) or a fault.
-type VerifyResult struct {
-	CDR   *CDR   `json:"cdr"`
-	NoCDR *NoCDR `json:"no_cdr"`
-	Fault *Fault `json:"fault"`
-}
-
-// NoCDR is a ticket status without CDR, e.g. "98" (in progress).
-type NoCDR struct {
-	StatusCode string `json:"status_code"`
-	Status     Status `json:"status"`
-}
-
-// ConsultResult is the answer of the consult and validation services.
-type ConsultResult struct {
-	Status *ConsultStatus `json:"status"`
-	Fault  *Fault         `json:"fault"`
-}
-
-// ConsultStatus is e.g. "0001" (accepted) for GetStatus, or "0" for ValidateCDP.
-type ConsultStatus struct {
-	StatusCode    string  `json:"status_code"`
-	StatusMessage *string `json:"status_message"`
-	// CDRZip is the CDR of GetStatusCDR.
-	CDRZip []byte `json:"cdr_zip"`
 }
