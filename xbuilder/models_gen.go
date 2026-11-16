@@ -94,6 +94,11 @@ type CreditNote struct {
 	Guias                   []Guia                 `json:"guias,omitempty"`
 	DocumentosRelacionados  []DocumentoRelacionado `json:"documentos_relacionados,omitempty"`
 	OrdenCompra             *string                `json:"orden_compra,omitempty"`
+	// The corrected amount owed and installments of the factura it
+	// modifies: required for `tipo_nota` "13" (Catalog9, ajustes de montos
+	// y/o fechas de pago) and refused for the others. Unlike an invoice's,
+	// it isn't filled in when missing.
+	FormaPago *FormaPago `json:"forma_pago,omitempty"`
 }
 
 // Cuota de pago
