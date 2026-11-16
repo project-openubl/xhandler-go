@@ -105,12 +105,31 @@ func TestSendFileReadsTheCDR(t *testing.T) {
 	if result.CDR == nil || result.CDR.Status != xsender.StatusAccepted || len(result.CDR.Zip) == 0 {
 		t.Fatalf("unexpected result %+v", result)
 	}
+	// Only guías have one
+	if result.CDR.DocumentDescription != nil {
+		t.Errorf("unexpected document description %q", *result.CDR.DocumentDescription)
+	}
 	if result.SendTarget.URL != xsender.BetaURLs.Invoice || result.VerifyTicketTarget != nil {
 		t.Errorf("unexpected targets %+v", result)
 	}
 	request := server.requests[0]
 	if request.Header.Get("SOAPAction") != "urn:sendBill" || request.URL.String() != xsender.BetaURLs.Invoice {
 		t.Errorf("unexpected request %s %v", request.URL, request.Header)
+	}
+}
+
+// The core gives a guía's CDR the URL its printed QR encodes
+func TestCDRCarriesTheDocumentDescription(t *testing.T) {
+	var cdr xsender.CDR
+	err := json.Unmarshal([]byte(`{"zip": "", "response_code": "0", "description": "",
+		"notes": [], "status": "ACEPTADO",
+		"document_description": "https://e-factura.sunat.gob.pe/v1/contribuyente/gre/comprobantes/descargaqr?hashqr=abc"}`), &cdr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cdr.DocumentDescription == nil ||
+		*cdr.DocumentDescription != "https://e-factura.sunat.gob.pe/v1/contribuyente/gre/comprobantes/descargaqr?hashqr=abc" {
+		t.Errorf("unexpected document description %v", cdr.DocumentDescription)
 	}
 }
 
