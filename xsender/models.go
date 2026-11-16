@@ -119,6 +119,10 @@ type CDR struct {
 	Status       Status   `json:"status"`
 	// StatusCode is the ticket status, only when verifying a ticket.
 	StatusCode string `json:"status_code,omitempty"`
+	// DocumentDescription is, for an accepted guía de remisión, the URL its
+	// printed copy's QR code must encode; nil for other documents (and with
+	// a core older than v6.0.0-alpha.2).
+	DocumentDescription *string `json:"document_description,omitempty"`
 }
 
 // Fault is an error answered by SUNAT.
